@@ -592,4 +592,28 @@ let game;
 // Inicializar el juego cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
     game = new MusikquizkampenGame();
+
+    // Configurar modal de changelog
+    const versionIndicator = document.getElementById('versionIndicator');
+    const changelogModal = document.getElementById('changelogModal');
+    const closeModal = document.getElementById('closeModal');
+
+    if (versionIndicator && changelogModal) {
+        versionIndicator.addEventListener('click', () => {
+            changelogModal.style.display = 'flex';
+        });
+    }
+
+    if (closeModal && changelogModal) {
+        closeModal.addEventListener('click', () => {
+            changelogModal.style.display = 'none';
+        });
+
+        // Cerrar al hacer click fuera del contenido
+        changelogModal.addEventListener('click', (e) => {
+            if (e.target === changelogModal) {
+                changelogModal.style.display = 'none';
+            }
+        });
+    }
 });
