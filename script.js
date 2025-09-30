@@ -112,7 +112,6 @@ class MusikquizkampenGame {
             qrCard.innerHTML = `
                 <img src="${card.qrImage}" alt="QR Code ${index + 1}" draggable="false">
                 <div class="song-label">SCAN FOR AFSPILLE</div>
-                <button class="play-button" data-audio-link="${card.audioLink}">▶ PLAY</button>
                 <div class="debug-year">${card.year}</div>
             `;
 
@@ -123,11 +122,6 @@ class MusikquizkampenGame {
 
             // Función para manejar el inicio del drag
             const startDrag = (e, isTouch = false) => {
-                // Prevenir drag si se hace click en el botón de play
-                if (e.target.classList.contains('play-button')) {
-                    return;
-                }
-
                 const clientX = isTouch ? e.touches[0].clientX : e.clientX;
                 const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
@@ -186,18 +180,6 @@ class MusikquizkampenGame {
             // Eventos de touch para móviles
             qrCard.addEventListener('touchstart', (e) => startDrag(e, true), { passive: false });
             document.addEventListener('touchend', (e) => endDrag(e, true), { passive: false });
-
-            // Evento para el botón de play
-            const playButton = qrCard.querySelector('.play-button');
-            if (playButton) {
-                playButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    const audioLink = playButton.dataset.audioLink;
-                    // Abrir link y mostrar overlay de protección
-                    this.openProtectedAudio(audioLink, card.id);
-                });
-            }
 
             qrCardsGrid.appendChild(qrCard);
         });
@@ -468,11 +450,6 @@ class MusikquizkampenGame {
                 qrImage.src = this.selectedCard.albumCover;
             }
 
-            // Ocultar el botón de play
-            const playButton = selectedCardElement.querySelector('.play-button');
-            if (playButton) {
-                playButton.style.display = 'none';
-            }
 
             // Cambiar el texto del label
             const songLabel = selectedCardElement.querySelector('.song-label');
