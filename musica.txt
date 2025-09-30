@@ -22,7 +22,7 @@ Album: Random Access Memories
 Tapa del disco: https://coverartarchive.org/release/b75c7245-4a6e-4dd7-8c77-4bfbfc3f5138/front-250
 Alternativa: https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg
 
-NOTAS:
-- Las URLs de Wikipedia suelen funcionar bien sin CORS
-- MusicBrainz puede tener problemas de CORS
-- Si encuentras mejores links, reemplázalos en el código
+1995 - https://shabam.dk/link/t0gRQn
+1973 - https://shabam.dk/link/S5nWeQ
+1968 - https://shabam.dk/link/9KMTR5
+2018 - https://shabam.dk/link/14gihZ

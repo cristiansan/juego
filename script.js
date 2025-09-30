@@ -9,7 +9,7 @@ class MusikquizkampenGame {
         this.selectedDirection = null; // 'before' o 'after'
         this.gameState = 'selecting'; // selecting, choosing_direction, revealed
         this.audioWindows = {}; // Para trackear ventanas de audio abiertas
-        this.cardDatabase = [
+        this.allCards = [
             {
                 id: 1,
                 year: 1978,
@@ -25,7 +25,7 @@ class MusikquizkampenGame {
                 artist: "Vaughn Monroe",
                 song: "Let It Snow!",
                 qrImage: "images/1945.png",
-                albumCover: "https://via.placeholder.com/300/1E88E5/FFFFFF?text=Let+It+Snow!",
+                albumCover: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png",
                 audioLink: "https://shabam.dk/link/hrR0v0"
             },
             {
@@ -45,10 +45,54 @@ class MusikquizkampenGame {
                 qrImage: "images/1965.png",
                 albumCover: "https://coverartarchive.org/release/dc28e81d-69a9-49c8-be79-ffe80ee8ee4d/front-250",
                 audioLink: "https://shabam.dk/link/QZwOPJ"
+            },
+            {
+                id: 5,
+                year: 1995,
+                artist: "TLC",
+                song: "Waterfalls",
+                qrImage: "images/1995.png",
+                albumCover: "https://upload.wikimedia.org/wikipedia/en/6/sixty/CrazySexyCool.jpg",
+                audioLink: "https://shabam.dk/link/t0gRQn"
+            },
+            {
+                id: 6,
+                year: 1973,
+                artist: "Marvin Gaye",
+                song: "Let's Get It On",
+                qrImage: "images/1973.png",
+                albumCover: "https://upload.wikimedia.org/wikipedia/en/4/4d/Lets_Get_It_On.jpg",
+                audioLink: "https://shabam.dk/link/S5nWeQ"
+            },
+            {
+                id: 7,
+                year: 1968,
+                artist: "Simon & Garfunkel",
+                song: "Mrs. Robinson",
+                qrImage: "images/1968.png",
+                albumCover: "https://upload.wikimedia.org/wikipedia/en/6/63/Bookends.jpg",
+                audioLink: "https://shabam.dk/link/9KMTR5"
+            },
+            {
+                id: 8,
+                year: 2018,
+                artist: "George Ezra",
+                song: "Shotgun",
+                qrImage: "images/2018.png",
+                albumCover: "https://upload.wikimedia.org/wikipedia/en/5/5c/George_Ezra_-_Shotgun.png",
+                audioLink: "https://shabam.dk/link/14gihZ"
             }
         ];
-        this.currentRound = [...this.cardDatabase]; // 4 cartas para elegir esta ronda
+        this.cardDatabase = this.getRandomCards(5); // Seleccionar 5 cartas al azar
+        this.currentRound = [...this.cardDatabase]; // Cartas para elegir esta ronda
         this.init();
+    }
+
+    getRandomCards(count) {
+        // Hacer una copia del array y mezclarlo
+        const shuffled = [...this.allCards].sort(() => Math.random() - 0.5);
+        // Retornar las primeras 'count' cartas
+        return shuffled.slice(0, count);
     }
 
     getRandomYear() {
@@ -544,24 +588,29 @@ class MusikquizkampenGame {
             // Aplicar nuevas posiciones
             if (index === 0) {
                 // Primera carta (arriba) - interactiva
-                card.style.zIndex = '4';
+                card.style.zIndex = '5';
                 card.style.transform = 'translateX(0px) translateY(0px) rotate(0deg)';
                 card.style.opacity = '1';
                 card.style.pointerEvents = 'auto';
             } else if (index === 1) {
-                card.style.zIndex = '3';
+                card.style.zIndex = '4';
                 card.style.transform = 'translateX(-3px) translateY(-3px) rotate(-2deg)';
-                card.style.opacity = '0.9';
+                card.style.opacity = '0.95';
                 card.style.pointerEvents = 'none';
             } else if (index === 2) {
-                card.style.zIndex = '2';
+                card.style.zIndex = '3';
                 card.style.transform = 'translateX(-6px) translateY(-6px) rotate(-4deg)';
-                card.style.opacity = '0.8';
+                card.style.opacity = '0.9';
                 card.style.pointerEvents = 'none';
             } else if (index === 3) {
-                card.style.zIndex = '1';
+                card.style.zIndex = '2';
                 card.style.transform = 'translateX(-9px) translateY(-9px) rotate(-6deg)';
-                card.style.opacity = '0.7';
+                card.style.opacity = '0.85';
+                card.style.pointerEvents = 'none';
+            } else if (index === 4) {
+                card.style.zIndex = '1';
+                card.style.transform = 'translateX(-12px) translateY(-12px) rotate(-8deg)';
+                card.style.opacity = '0.8';
                 card.style.pointerEvents = 'none';
             }
         });
@@ -607,7 +656,7 @@ class MusikquizkampenGame {
                 <div class="game-over">
                     <h2>¡Juego Terminado!</h2>
                     <div class="final-score">Puntuación Final: ${this.score} puntos</div>
-                    <div class="cards-guessed">Cartas acertadas: ${this.guessedCards.length} de ${this.cardDatabase.length}</div>
+                    <div class="cards-guessed">Cartas acertadas: ${this.guessedCards.length} de 5</div>
                     <div class="timeline-summary">
                         <h3>Tu Timeline Final:</h3>
                         <div class="final-timeline">
