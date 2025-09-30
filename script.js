@@ -8,6 +8,7 @@ class MusikquizkampenGame {
         this.selectedQRIndex = null;
         this.selectedDirection = null; // 'before' o 'after'
         this.gameState = 'selecting'; // selecting, choosing_direction, revealed
+        this.audioWindows = {}; // Para trackear ventanas de audio abiertas
         this.cardDatabase = [
             {
                 id: 1,
@@ -15,7 +16,8 @@ class MusikquizkampenGame {
                 artist: "Boney M",
                 song: "Rasputin",
                 qrImage: "images/1978.png",
-                albumCover: "images/1978.png"
+                albumCover: "https://coverartarchive.org/release/0c1b9cb5-8c8e-4739-bc94-7d0a37c9c745/front-250",
+                audioLink: "https://shabam.dk/link/rgcRN2"
             },
             {
                 id: 2,
@@ -23,7 +25,8 @@ class MusikquizkampenGame {
                 artist: "Vaughn Monroe",
                 song: "Let It Snow!",
                 qrImage: "images/1945.png",
-                albumCover: "images/1945.png"
+                albumCover: "https://via.placeholder.com/300/1E88E5/FFFFFF?text=Let+It+Snow!",
+                audioLink: "https://shabam.dk/link/hrR0v0"
             },
             {
                 id: 3,
@@ -31,7 +34,8 @@ class MusikquizkampenGame {
                 artist: "Daft Punk",
                 song: "Get Lucky",
                 qrImage: "images/2013.png",
-                albumCover: "images/2013.png"
+                albumCover: "https://coverartarchive.org/release/b75c7245-4a6e-4dd7-8c77-4bfbfc3f5138/front-250",
+                audioLink: "https://shabam.dk/link/CuqvIR"
             },
             {
                 id: 4,
@@ -39,7 +43,8 @@ class MusikquizkampenGame {
                 artist: "The Beatles",
                 song: "Here Comes The Sun",
                 qrImage: "images/1965.png",
-                albumCover: "images/1965.png"
+                albumCover: "https://coverartarchive.org/release/dc28e81d-69a9-49c8-be79-ffe80ee8ee4d/front-250",
+                audioLink: "https://shabam.dk/link/QZwOPJ"
             }
         ];
         this.currentRound = [...this.cardDatabase]; // 4 cartas para elegir esta ronda
@@ -107,6 +112,7 @@ class MusikquizkampenGame {
             qrCard.innerHTML = `
                 <img src="${card.qrImage}" alt="QR Code ${index + 1}" draggable="false">
                 <div class="song-label">SCAN FOR AFSPILLE</div>
+                <button class="play-button" data-audio-link="${card.audioLink}">▶ PLAY</button>
                 <div class="debug-year">${card.year}</div>
             `;
 
@@ -117,6 +123,11 @@ class MusikquizkampenGame {
 
             // Función para manejar el inicio del drag
             const startDrag = (e, isTouch = false) => {
+                // Prevenir drag si se hace click en el botón de play
+                if (e.target.classList.contains('play-button')) {
+                    return;
+                }
+
                 const clientX = isTouch ? e.touches[0].clientX : e.clientX;
                 const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
@@ -175,6 +186,18 @@ class MusikquizkampenGame {
             // Eventos de touch para móviles
             qrCard.addEventListener('touchstart', (e) => startDrag(e, true), { passive: false });
             document.addEventListener('touchend', (e) => endDrag(e, true), { passive: false });
+
+            // Evento para el botón de play
+            const playButton = qrCard.querySelector('.play-button');
+            if (playButton) {
+                playButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const audioLink = playButton.dataset.audioLink;
+                    // Abrir link y mostrar overlay de protección
+                    this.openProtectedAudio(audioLink, card.id);
+                });
+            }
 
             qrCardsGrid.appendChild(qrCard);
         });
@@ -425,6 +448,40 @@ class MusikquizkampenGame {
         if (btnMiddle) btnMiddle.style.display = 'none';
         if (middleButtonContainer) middleButtonContainer.style.display = 'none';
 
+        // Ocultar overlay de protección al colocar la carta
+        this.hideProtectionOverlay(this.selectedCard.id);
+
+        // Cambiar el borde de la carta según el resultado
+        const selectedCardElement = document.querySelector(`[data-card-id="${this.selectedCard.id}"]`);
+        if (selectedCardElement) {
+            if (isCorrect) {
+                selectedCardElement.classList.add('correct-answer');
+                selectedCardElement.classList.remove('incorrect-answer');
+            } else {
+                selectedCardElement.classList.add('incorrect-answer');
+                selectedCardElement.classList.remove('correct-answer');
+            }
+
+            // Mostrar la tapa del disco en vez del QR
+            const qrImage = selectedCardElement.querySelector('img');
+            if (qrImage) {
+                qrImage.src = this.selectedCard.albumCover;
+            }
+
+            // Ocultar el botón de play
+            const playButton = selectedCardElement.querySelector('.play-button');
+            if (playButton) {
+                playButton.style.display = 'none';
+            }
+
+            // Cambiar el texto del label
+            const songLabel = selectedCardElement.querySelector('.song-label');
+            if (songLabel) {
+                songLabel.textContent = `${this.selectedCard.artist} - ${this.selectedCard.song}`;
+                songLabel.style.fontSize = '12px';
+            }
+        }
+
         // Mostrar resultado arriba de las cartas
         const resultContainer = document.getElementById('resultContainer');
         const resultContent = document.getElementById('resultContent');
@@ -433,6 +490,18 @@ class MusikquizkampenGame {
             const resultClass = isCorrect ? 'correct' : 'incorrect';
             const resultText = isCorrect ? '¡Correcto!' : 'Incorrecto';
             const pointsText = isCorrect ? '+20 puntos' : '+0 puntos';
+
+            // Cambiar la clase del modal según el resultado
+            const resultCard = resultContainer.querySelector('.result-card');
+            if (resultCard) {
+                if (isCorrect) {
+                    resultCard.classList.add('correct-result');
+                    resultCard.classList.remove('incorrect-result');
+                } else {
+                    resultCard.classList.add('incorrect-result');
+                    resultCard.classList.remove('correct-result');
+                }
+            }
 
             resultContent.innerHTML = `
                 <div class="result-indicator ${resultClass}">${resultText}</div>
@@ -445,7 +514,7 @@ class MusikquizkampenGame {
                 <button class="next-button" onclick="game.nextRound()">Siguiente</button>
             `;
 
-            resultContainer.style.display = 'block';
+            resultContainer.style.display = 'flex';
         }
 
         // Ocultar el contenedor de carta seleccionada de abajo
@@ -584,6 +653,89 @@ class MusikquizkampenGame {
             scoreElement.textContent = this.score;
         }
     }
+
+    openProtectedAudio(audioLink, cardId) {
+        // Abrir en nueva ventana
+        const audioWindow = window.open(audioLink, `audio_${cardId}`, 'width=400,height=600');
+
+        // Guardar referencia
+        this.audioWindows[cardId] = audioWindow;
+
+        // Mostrar overlay de protección
+        this.showProtectionOverlay(cardId);
+    }
+
+    showProtectionOverlay(cardId) {
+        // Buscar la carta específica
+        const card = document.querySelector(`[data-card-id="${cardId}"]`);
+        if (!card) return;
+
+        // Ocultar la imagen QR y el botón play
+        const qrImage = card.querySelector('img');
+        const playButton = card.querySelector('.play-button');
+        const songLabel = card.querySelector('.song-label');
+
+        if (qrImage) qrImage.style.display = 'none';
+        if (playButton) playButton.style.display = 'none';
+        if (songLabel) songLabel.style.display = 'none';
+
+        // Crear el overlay dentro de la carta
+        const overlay = document.createElement('div');
+        overlay.className = 'card-audio-overlay';
+        overlay.innerHTML = `
+            <div class="audio-playing-icon">🎵</div>
+            <div class="audio-playing-text">Escuchando...</div>
+            <div class="audio-hint">Arrastra la carta al timeline</div>
+        `;
+
+        card.appendChild(overlay);
+    }
+
+    hideProtectionOverlay(cardId) {
+        // Buscar la carta y remover el overlay
+        const card = document.querySelector(`[data-card-id="${cardId}"]`);
+        if (card) {
+            const overlay = card.querySelector('.card-audio-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+
+            // Restaurar elementos originales
+            const qrImage = card.querySelector('img');
+            const playButton = card.querySelector('.play-button');
+            const songLabel = card.querySelector('.song-label');
+
+            if (qrImage) qrImage.style.display = 'block';
+            if (playButton) playButton.style.display = 'block';
+            if (songLabel) songLabel.style.display = 'block';
+        }
+
+        // Cerrar la ventana de audio si existe
+        if (this.audioWindows[cardId] && !this.audioWindows[cardId].closed) {
+            this.audioWindows[cardId].close();
+        }
+        delete this.audioWindows[cardId];
+    }
+
+    openAudioModal(audioLink) {
+        const audioModal = document.getElementById('audioModal');
+        const audioIframe = document.getElementById('audioIframe');
+
+        if (audioModal && audioIframe) {
+            audioIframe.src = audioLink;
+            audioModal.style.display = 'flex';
+        }
+    }
+
+    closeAudioModal() {
+        const audioModal = document.getElementById('audioModal');
+        const audioIframe = document.getElementById('audioIframe');
+
+        if (audioModal && audioIframe) {
+            audioIframe.src = '';
+            audioModal.style.display = 'none';
+        }
+    }
 }
 
 // Variable global para acceder al juego
@@ -613,6 +765,23 @@ document.addEventListener('DOMContentLoaded', () => {
         changelogModal.addEventListener('click', (e) => {
             if (e.target === changelogModal) {
                 changelogModal.style.display = 'none';
+            }
+        });
+    }
+
+    // Configurar modal de audio
+    const audioModal = document.getElementById('audioModal');
+    const closeAudioModal = document.getElementById('closeAudioModal');
+
+    if (closeAudioModal && audioModal) {
+        closeAudioModal.addEventListener('click', () => {
+            game.closeAudioModal();
+        });
+
+        // Cerrar al hacer click fuera del contenido
+        audioModal.addEventListener('click', (e) => {
+            if (e.target === audioModal) {
+                game.closeAudioModal();
             }
         });
     }

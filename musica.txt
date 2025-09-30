@@ -1,0 +1,28 @@
+TAPAS DE DISCOS PARA MUSIKQUIZKAMPEN
+
+1945 - Vaughn Monroe - Let It Snow!
+Link audio: https://shabam.dk/link/hrR0v0
+Tapa del disco: [BUSCAR] - Imagen de vinilo o cover de la canción de 1945
+
+1965 - The Beatles - Here Comes The Sun
+Link audio: https://shabam.dk/link/QZwOPJ
+Album: Abbey Road
+Tapa del disco: https://coverartarchive.org/release/dc28e81d-69a9-49c8-be79-ffe80ee8ee4d/front-250
+Alternativa: https://upload.wikimedia.org/wikipedia/en/4/42/Beatles_-_Abbey_Road.jpg
+
+1978 - Boney M - Rasputin
+Link audio: https://shabam.dk/link/rgcRN2
+Album: Nightflight to Venus
+Tapa del disco: https://coverartarchive.org/release/0c1b9cb5-8c8e-4739-bc94-7d0a37c9c745/front-250
+Alternativa: https://upload.wikimedia.org/wikipedia/en/1/19/Boney_M._-_Nightflight_to_Venus.jpg
+
+2013 - Daft Punk - Get Lucky
+Link audio: https://shabam.dk/link/CuqvIR
+Album: Random Access Memories
+Tapa del disco: https://coverartarchive.org/release/b75c7245-4a6e-4dd7-8c77-4bfbfc3f5138/front-250
+Alternativa: https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg
+
+NOTAS:
+- Las URLs de Wikipedia suelen funcionar bien sin CORS
+- MusicBrainz puede tener problemas de CORS
+- Si encuentras mejores links, reemplázalos en el código

@@ -72,17 +72,28 @@
     </div>
 
     <!-- Versión -->
-    <div class="version-indicator" id="versionIndicator">v0.1</div>
+    <div class="version-indicator" id="versionIndicator">v0.2</div>
 
     <!-- Modal de Changelog -->
     <div class="changelog-modal" id="changelogModal" style="display: none;">
         <div class="changelog-content">
             <div class="changelog-header">
-                <h2>Changelog - v0.1</h2>
+                <h2>Changelog</h2>
                 <button class="close-modal" id="closeModal">&times;</button>
             </div>
             <div class="changelog-body">
-                <h3>Versión Inicial</h3>
+                <h3>v0.2 - Reproducción de Audio</h3>
+                <ul>
+                    <li>Botón "Play" en cada carta para reproducir audio directamente</li>
+                    <li>Overlay "Escuchando..." en la carta mientras se reproduce</li>
+                    <li>Borde verde para respuestas correctas y rojo para incorrectas</li>
+                    <li>Muestra la tapa del disco en vez del QR al revelar respuesta</li>
+                    <li>Cierre automático de ventana de audio al colocar carta</li>
+                    <li>Cartas 40% más grandes para mejor visualización</li>
+                    <li>Interfaz responsive optimizada para diferentes pantallas</li>
+                </ul>
+
+                <h3>v0.1 - Versión Inicial</h3>
                 <ul>
                     <li>Sistema de juego drag & drop para ordenar canciones en timeline</li>
                     <li>4 canciones de diferentes décadas (1945-2013)</li>
@@ -90,6 +101,19 @@
                     <li>Código QR en cada carta para escanear y escuchar</li>
                     <li>Timeline dinámico que se construye con las respuestas correctas</li>
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Audio Player -->
+    <div class="audio-modal" id="audioModal" style="display: none;">
+        <div class="audio-modal-content">
+            <div class="audio-modal-header">
+                <h3>🎵 Escucha la canción</h3>
+                <button class="close-audio-modal" id="closeAudioModal">&times;</button>
+            </div>
+            <div class="audio-modal-body">
+                <iframe id="audioIframe" src="" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
             </div>
         </div>
     </div>
