@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musikquizkampen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>Musikquizkampen</h1>
+            <div class="score">Puntos: <span id="score">0</span></div>
+        </header>
+
+        <main class="game-board">
+            <!-- Área principal de selección de cartas QR -->
+            <div class="qr-selection-area">
+                <!-- Resultado como modal sobre las cartas -->
+                <div class="result-container" id="resultContainer" style="display: none;">
+                    <div class="result-card">
+                        <div class="result-content" id="resultContent">
+                            <!-- Contenido del resultado se mostrará aquí -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qr-cards-grid" id="qrCardsGrid">
+                    <!-- Las 4 cartas QR se generarán dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Línea de tiempo con años y zonas de drop -->
+            <div class="timeline-container">
+                <div class="timeline-years" id="timelineYears">
+                    <!-- Los años se mostrarán aquí -->
+                </div>
+            </div>
+
+
+            <!-- Botones de control de juego (modo fallback para dispositivos sin drag & drop) -->
+            <div class="game-controls-container" id="gameControlsContainer" style="display: none;">
+                <h3 id="controlsText">¿Esta canción es anterior o posterior?</h3>
+                <div class="control-buttons" id="controlButtons">
+                    <button class="btn btn-direction" id="btnBefore">-</button>
+                    <button class="btn btn-ok" id="btnOk">OK</button>
+                    <button class="btn btn-direction" id="btnAfter">+</button>
+                </div>
+                <!-- Botón intermedio (aparece cuando hay múltiples cartas) -->
+                <div class="middle-button-container" id="middleButtonContainer" style="display: none;">
+                    <button class="btn btn-middle" id="btnMiddle">INTERMEDIO</button>
+                </div>
+            </div>
+
+            <!-- Carta seleccionada (se muestra cuando se elige una) -->
+            <div class="selected-card-container" id="selectedCardContainer" style="display: none;">
+                <div class="selected-card">
+                    <div class="card-content" id="selectedCardContent">
+                        <!-- Contenido de la carta seleccionada -->
+                    </div>
+                </div>
+                <!-- Botón Siguiente para drag & drop -->
+                <div class="next-button-container">
+                    <button class="btn btn-next-drag" id="btnNextDrag">Siguiente</button>
+                </div>
+            </div>
+        </main>
+
+        <div class="game-info">
+            <p>Selecciona una carta QR, escucha la canción y colócala en la línea de tiempo</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

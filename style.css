@@ -1,0 +1,850 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: white;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.game-container {
+    width: 100%;
+    min-height: 100vh;
+    background: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-header {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.game-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.score {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.game-board {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+}
+
+/* Modal arriba de las cartas */
+.result-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1500;
+    text-align: center;
+}
+
+.result-card {
+    background: white;
+    border: 3px solid #e74c3c;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    max-width: 320px;
+    width: 100%;
+    transform: scale(0.8);
+    animation: modalAppear 0.3s ease-out forwards;
+}
+
+@keyframes modalAppear {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.result-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.result-content .album-cover {
+    width: 150px;
+    height: 150px;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.result-content .year-display {
+    font-size: 36px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin: 0;
+}
+
+.result-content .song-info {
+    text-align: center;
+}
+
+.result-content .artist {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.result-content .song {
+    font-size: 14px;
+    color: #666;
+}
+
+.result-content .result-indicator {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin: 0;
+}
+
+.result-content .result-indicator.correct {
+    background: #d4edda;
+    color: #155724;
+    border: 2px solid #c3e6cb;
+}
+
+.result-content .result-indicator.incorrect {
+    background: #f8d7da;
+    color: #721c24;
+    border: 2px solid #f5c6cb;
+}
+
+.result-content .next-button {
+    background: #27ae60;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-top: 10px;
+}
+
+.result-content .next-button:hover {
+    background: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Área de selección de cartas QR */
+.qr-selection-area {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.qr-cards-grid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto;
+    position: relative;
+    height: 220px;
+    max-width: 400px;
+}
+
+.qr-card {
+    background: white;
+    border: 3px solid #333;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: grab;
+    transition: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    width: 160px;
+    height: 200px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+}
+
+.qr-card:active {
+    cursor: grabbing;
+}
+
+/* Efecto de mazo - solo la primera carta es interactiva */
+.qr-card:nth-child(1) {
+    z-index: 4;
+    transform: translateX(0px) translateY(0px) rotate(0deg);
+}
+
+.qr-card:nth-child(2) {
+    z-index: 3;
+    transform: translateX(-3px) translateY(-3px) rotate(-2deg);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.qr-card:nth-child(3) {
+    z-index: 2;
+    transform: translateX(-6px) translateY(-6px) rotate(-4deg);
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.qr-card:nth-child(4) {
+    z-index: 1;
+    transform: translateX(-9px) translateY(-9px) rotate(-6deg);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Sin efecto hover - cartas fijas en mazo */
+
+.qr-card.selected {
+    border-color: #e74c3c;
+    background: #ffe6e6;
+    transform: translateY(-3px);
+}
+
+.qr-card img {
+    width: 100%;
+    max-width: 120px;
+    height: auto;
+    border-radius: 5px;
+}
+
+.qr-card .song-label {
+    font-size: 10px;
+    color: #666;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.debug-year {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #e74c3c;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 10;
+}
+
+/* Línea de tiempo con años */
+.timeline-container {
+    margin: 20px auto;
+    position: relative;
+    max-width: 600px;
+}
+
+.timeline-years {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    min-height: 60px;
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+/* Zonas de drop */
+.drop-zone {
+    position: absolute;
+    top: 0;
+    width: 50px;
+    height: 100%;
+    border: 3px dashed transparent;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.drop-zone-before {
+    left: 0;
+}
+
+.drop-zone-after {
+    right: 0;
+}
+
+.drop-zone-middle {
+    left: 50%;
+    top: 110%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 50px;
+}
+
+.drop-zone.drag-over {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    transform: scale(1.05);
+}
+
+.drop-indicator {
+    font-size: 10px;
+    font-weight: bold;
+    color: #666;
+    text-align: center;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    pointer-events: none;
+}
+
+.drop-zone-middle .drop-indicator {
+    writing-mode: horizontal-tb;
+    text-orientation: initial;
+}
+
+/* Cartas QR arrastrables */
+.qr-card.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg) scale(1.1) !important;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Deshabilitar cartas durante estado revealed */
+body.game-revealed .qr-card {
+    opacity: 0.3;
+    pointer-events: none;
+    filter: grayscale(100%);
+}
+
+
+/* Zonas de drop entre años */
+.drop-zone-between {
+    width: 25px;
+    height: 25px;
+    margin: 0 5px;
+    border: 2px dashed #ccc;
+    border-radius: 50%;
+    display: flex; /* Siempre visible ahora */
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    z-index: 5;
+    cursor: pointer;
+}
+
+.drop-zone-between:hover {
+    border-color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+    transform: scale(1.1);
+}
+
+.drop-zone-between.drag-over {
+    border-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.2);
+    transform: scale(1.3);
+}
+
+.drop-indicator-small {
+    font-size: 14px;
+    color: #666;
+    font-weight: bold;
+    pointer-events: none;
+}
+
+/* Mostrar zonas entre años durante drag con más prominencia */
+body.dragging .drop-zone-between {
+    border-color: #3498db;
+    background: rgba(52, 152, 219, 0.15);
+    transform: scale(1.1);
+}
+
+.year-slot {
+    min-width: 65px;
+    height: 45px;
+    background: white;
+    border: 2px solid #333;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #e74c3c;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.year-slot.empty {
+    border: 2px dashed #ccc;
+    background: #f9f9f9;
+    color: #999;
+}
+
+.year-slot.random {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+/* Controles de juego */
+.game-controls-container {
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border: 2px solid #ddd;
+}
+
+.game-controls-container h3 {
+    font-size: 16px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.control-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.btn-direction {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #333;
+    background: white;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-direction:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-direction.selected {
+    background: #e74c3c;
+    color: white;
+    border-color: #c0392b;
+    transform: scale(1.1);
+}
+
+.btn-direction:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-ok {
+    background: #27ae60;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    min-width: 80px;
+}
+
+.btn-ok:hover {
+    background: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-ok:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.middle-button-container {
+    margin-top: 15px;
+}
+
+.btn-middle {
+    background: #f39c12;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.btn-middle:hover {
+    background: #e67e22;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.btn-middle.selected {
+    background: #d35400;
+    transform: translateY(-2px);
+}
+
+/* Instrucciones drag & drop */
+.drag-instructions {
+    text-align: center;
+    margin: 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    color: white;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.drag-instructions p {
+    margin: 5px 0;
+}
+
+.drag-instructions strong {
+    font-weight: bold;
+}
+
+/* Carta seleccionada */
+.selected-card-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.selected-card {
+    display: inline-block;
+    background: white;
+    border: 3px solid #e74c3c;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.card-content .year-display {
+    font-size: 48px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin-bottom: 10px;
+}
+
+.card-content .song-info {
+    font-size: 14px;
+    color: #333;
+}
+
+.card-content .artist {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.result-indicator {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+
+.result-indicator.correct {
+    background: #d4edda;
+    color: #155724;
+    border: 2px solid #c3e6cb;
+}
+
+.result-indicator.incorrect {
+    background: #f8d7da;
+    color: #721c24;
+    border: 2px solid #f5c6cb;
+}
+
+.guess-info {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #666;
+}
+
+.guess-info .points {
+    font-weight: bold;
+    margin-top: 5px;
+    color: #e74c3c;
+}
+
+.next-button-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.btn-next-drag {
+    background: #27ae60;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-next-drag:hover {
+    background: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Pantalla de fin de juego */
+.game-over {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.game-over h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.final-score {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #f1c40f;
+}
+
+.cards-guessed {
+    font-size: 18px;
+    margin-bottom: 25px;
+    color: #ecf0f1;
+}
+
+.timeline-summary {
+    margin: 25px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.timeline-summary h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.final-timeline {
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 14px;
+    color: #ecf0f1;
+}
+
+.btn-restart {
+    background: #27ae60;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-restart:hover {
+    background: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.game-info {
+    background: #f8f9fa;
+    padding: 15px;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    border-top: 1px solid #ddd;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .game-header {
+        padding: 15px;
+    }
+
+    .game-header h1 {
+        font-size: 20px;
+    }
+
+    .score {
+        font-size: 16px;
+    }
+
+    .game-board {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-header {
+        padding: 12px;
+    }
+
+    .game-header h1 {
+        font-size: 18px;
+    }
+
+    .score {
+        font-size: 14px;
+    }
+
+    .game-board {
+        padding: 10px;
+    }
+
+    .qr-cards-grid {
+        gap: 10px;
+    }
+
+    .qr-card {
+        padding: 10px;
+        width: 140px;
+        height: 180px;
+    }
+
+    .qr-card img {
+        max-width: 100px;
+    }
+
+    .qr-card .song-label {
+        font-size: 9px;
+    }
+
+    .year-slot {
+        min-width: 55px;
+        height: 40px;
+        font-size: 12px;
+    }
+
+    .btn-ok {
+        padding: 12px 30px;
+        font-size: 16px;
+    }
+
+    .card-content .year-display {
+        font-size: 40px;
+    }
+
+    /* Modal responsive */
+    .result-card {
+        max-width: 280px;
+        padding: 25px;
+    }
+
+    .result-content .album-cover {
+        width: 120px;
+        height: 120px;
+    }
+
+    .result-content .year-display {
+        font-size: 30px;
+    }
+
+    .result-content .next-button {
+        padding: 12px 25px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 360px) {
+    .qr-card img {
+        max-width: 80px;
+    }
+
+    .year-slot {
+        min-width: 50px;
+        height: 35px;
+        font-size: 11px;
+    }
+
+    .card-content .year-display {
+        font-size: 36px;
+    }
+
+    .btn-ok {
+        padding: 10px 25px;
+        font-size: 14px;
+    }
+}
