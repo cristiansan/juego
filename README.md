@@ -36,15 +36,16 @@ Este es el primer boceto del mismo, en papel:
 - [qrcode](https://www.npmjs.com/package/qrcode) - Generación de códigos QR
 
 
-## 📝 Versión actual: v0.3
+## 📝 Versión actual: v0.6
 
 ### Últimas actualizaciones
 
-- Ampliado el catálogo de 4 a 8 canciones diferentes
-- 5 canciones aleatorias por partida
-- Nuevas canciones: TLC, Marvin Gaye, Simon & Garfunkel, George Ezra
-- Mazo visual mejorado
-- Información completa de artista y canción en todas las cartas
+- Menú hamburguesa con panel lateral deslizable y animación
+- Timer se pausa al abrir el menú y se reanuda al cerrarlo
+- Opción "Hacks" para modo debug (años en cartas + bordes de contenedores)
+- Versión movida al interior del menú
+- Menú con fondo semi-transparente y efecto blur
+- Transición suave entre icono ☰ y X con rotación
 
 ## 📄 Licencia
 

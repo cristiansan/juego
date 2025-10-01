@@ -10,6 +10,7 @@ body {
     min-height: 100vh;
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
 }
 
 .game-container {
@@ -20,6 +21,22 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+/* Barra de tiempo */
+.timer-bar-container {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    position: relative;
+    overflow: hidden;
+}
+
+.timer-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60, #f39c12, #e74c3c);
+    width: 0%;
+    transition: width 0.1s linear;
 }
 
 .game-header {
@@ -47,12 +64,29 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     max-width: 100%;
     width: 100%;
     overflow: hidden;
     gap: 0;
+    /* Debug border */
+    border: 3px solid transparent;
+}
+
+/* Debug label */
+.game-board::before {
+    content: "GAME-BOARD";
+    position: absolute;
+    top: 65px;
+    left: 5px;
+    background: purple;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 10000;
+    border-radius: 3px;
+    display: none;
 }
 
 /* Modal arriba de las cartas */
@@ -67,18 +101,22 @@ body {
     align-items: center;
     z-index: 1500;
     text-align: center;
+    overflow: hidden;
 }
 
 .result-card {
     background: white;
     border: 8px solid #e74c3c;
     border-radius: 15px;
-    padding: 30px;
+    padding: 10px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-    max-width: 400px;
-    width: 90%;
+    max-width: calc(100% - 20px);
+    width: calc(100% - 20px);
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
     transform: scale(0.8);
     animation: modalAppear 0.3s ease-out forwards;
+    box-sizing: border-box;
 }
 
 .result-card.correct-result {
@@ -105,6 +143,13 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 15px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.result-content iframe {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .result-content .album-cover {
@@ -182,10 +227,28 @@ body {
     margin: 0;
     position: relative;
     width: 100%;
-    flex-shrink: 0;
+    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+    /* Debug border */
+    border: 3px solid transparent;
+}
+
+/* Debug label */
+.qr-selection-area::before {
+    content: "QR-SELECTION-AREA";
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: blue;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 10000;
+    border-radius: 3px;
+    display: none;
 }
 
 .qr-cards-grid {
@@ -194,25 +257,43 @@ body {
     align-items: center;
     margin: 0;
     position: relative;
-    height: 500px;
+    height: 100%;
     width: 100%;
     max-width: 800px;
     padding: 0;
     box-sizing: border-box;
+    overflow: hidden;
+    /* Debug border */
+    border: 3px solid transparent;
+}
+
+/* Debug label */
+.qr-cards-grid::before {
+    content: "QR-CARDS-GRID";
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: green;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 10000;
+    border-radius: 3px;
+    display: none;
 }
 
 .qr-card {
     background: white;
     border: 2px solid #333;
     border-radius: 12px;
-    padding: 30px;
+    padding: 20px;
     text-align: center;
     cursor: grab;
     transition: border-color 0.3s ease;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     position: absolute;
-    width: 532px;
-    height: 672px;
+    height: 90%;
+    aspect-ratio: 0.79;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -220,7 +301,9 @@ body {
     -webkit-user-drag: none;
     -webkit-touch-callout: none;
     touch-action: none;
-    transform: scale(1.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
 }
 
 .qr-card.correct-answer {
@@ -240,33 +323,33 @@ body {
 /* Efecto de mazo - solo la primera carta es interactiva */
 .qr-card:nth-child(1) {
     z-index: 5;
-    transform: scale(1.4) translateX(0px) translateY(0px) rotate(0deg);
+    transform: translateX(0px) translateY(0px) rotate(0deg);
 }
 
 .qr-card:nth-child(2) {
     z-index: 4;
-    transform: scale(1.4) translateX(-5px) translateY(-5px) rotate(-2deg);
+    transform: translateX(-5px) translateY(-5px) rotate(-2deg);
     opacity: 0.95;
     pointer-events: none;
 }
 
 .qr-card:nth-child(3) {
     z-index: 3;
-    transform: scale(1.4) translateX(-10px) translateY(-10px) rotate(-4deg);
+    transform: translateX(-10px) translateY(-10px) rotate(-4deg);
     opacity: 0.9;
     pointer-events: none;
 }
 
 .qr-card:nth-child(4) {
     z-index: 2;
-    transform: scale(1.4) translateX(-15px) translateY(-15px) rotate(-6deg);
+    transform: translateX(-15px) translateY(-15px) rotate(-6deg);
     opacity: 0.85;
     pointer-events: none;
 }
 
 .qr-card:nth-child(5) {
     z-index: 1;
-    transform: scale(1.4) translateX(-20px) translateY(-20px) rotate(-8deg);
+    transform: translateX(-20px) translateY(-20px) rotate(-8deg);
     opacity: 0.8;
     pointer-events: none;
 }
@@ -284,6 +367,8 @@ body {
     max-width: 300px;
     height: auto;
     border-radius: 8px;
+    margin: 0 auto;
+    display: block;
 }
 
 .qr-card .song-label {
@@ -337,16 +422,34 @@ body {
     font-size: 18px;
     font-weight: bold;
     z-index: 10;
+    display: none;
 }
 
 /* Línea de tiempo con años */
 .timeline-container {
-    margin: -10px 0 0 0;
-    padding: 0 10px;
+    margin: 0;
+    padding: 0;
     position: relative;
     width: 100%;
     max-width: 800px;
     flex-shrink: 0;
+    /* Debug border */
+    border: 3px solid transparent;
+}
+
+/* Debug label */
+.timeline-container::before {
+    content: "TIMELINE-CONTAINER";
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: red;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 10000;
+    border-radius: 3px;
+    display: none;
 }
 
 .timeline-years {
@@ -355,13 +458,30 @@ body {
     gap: 8px;
     justify-content: center;
     align-items: center;
-    min-height: 70px;
-    border: 2px dashed #ddd;
+    min-height: 140px;
     border-radius: 10px;
     padding: 10px;
     background: #f8f9fa;
     width: 100%;
+    height: 100%;
     box-sizing: border-box;
+    /* Debug border */
+    border: 3px solid transparent;
+}
+
+/* Debug label */
+.timeline-years::before {
+    content: "TIMELINE-YEARS";
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: orange;
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 10000;
+    border-radius: 3px;
+    display: none;
 }
 
 /* Zonas de drop */
@@ -476,8 +596,10 @@ body.dragging .drop-zone-between {
 }
 
 .year-slot {
-    min-width: 65px;
-    height: 45px;
+    min-width: 35px;
+    width: fit-content;
+    padding: 0 8px;
+    height: 35px;
     background: white;
     border: 2px solid #333;
     border-radius: 8px;
@@ -782,6 +904,27 @@ body.dragging .drop-zone-between {
     color: #ecf0f1;
 }
 
+.btn-share {
+    background: #3498db;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 15px;
+}
+
+.btn-share:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
 .btn-restart {
     background: #27ae60;
     color: white;
@@ -818,23 +961,106 @@ body.dragging .drop-zone-between {
 
 /* Indicador de versión */
 .version-indicator {
+    color: #888;
+    padding: 20px;
+    font-size: 12px;
+    text-align: center;
+    margin-top: auto;
+}
+
+/* Menú hamburguesa */
+.hamburger-menu {
     position: fixed;
     top: 10px;
     right: 10px;
-    background: rgba(0, 0, 0, 0.7);
+    background: transparent;
     color: white;
     padding: 8px 12px;
-    border-radius: 15px;
-    font-size: 12px;
+    font-size: 29px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 2000;
+    transition: transform 0.3s ease, opacity 0.2s ease;
+    z-index: 3001;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-.version-indicator:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.05);
+.hamburger-menu:hover {
+    transform: scale(1.1);
+}
+
+.hamburger-menu.menu-open {
+    transform: rotate(90deg);
+}
+
+.hamburger-menu.is-x {
+    font-size: 38px;
+}
+
+/* Overlay del menú */
+.menu-dropdown {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 3000;
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-end;
+}
+
+/* Panel del menú */
+.menu-content {
+    width: 280px;
+    background: rgba(26, 26, 26, 0.5);
+    backdrop-filter: blur(10px);
+    padding: 80px 20px 40px 20px;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+.menu-item {
+    padding: 18px 25px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.menu-item span {
+    font-size: 16px;
+    font-weight: 500;
+    color: white;
 }
 
 /* Modal de Changelog */
@@ -897,26 +1123,33 @@ body.dragging .drop-zone-between {
 }
 
 .changelog-body {
-    padding: 30px;
+    padding: 20px;
 }
 
 .changelog-body h3 {
     color: #e74c3c;
-    margin-bottom: 15px;
-    font-size: 20px;
+    margin-bottom: 8px;
+    margin-top: 15px;
+    font-size: 16px;
+}
+
+.changelog-body h3:first-child {
+    margin-top: 0;
 }
 
 .changelog-body ul {
     list-style: none;
     padding: 0;
+    margin-bottom: 10px;
 }
 
 .changelog-body ul li {
-    padding: 10px 0;
-    padding-left: 25px;
+    padding: 4px 0;
+    padding-left: 20px;
     position: relative;
     color: #333;
-    line-height: 1.5;
+    line-height: 1.3;
+    font-size: 13px;
 }
 
 .changelog-body ul li:before {
@@ -925,7 +1158,7 @@ body.dragging .drop-zone-between {
     left: 0;
     color: #27ae60;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 13px;
 }
 
 /* Overlay de audio dentro de la carta */

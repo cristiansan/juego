@@ -5,7 +5,8 @@
       "Bash(node:*)",
       "Bash(del:*)",
       "WebFetch(domain:shabam.dk)",
-      "WebFetch(domain:open.spotify.com)"
+      "WebFetch(domain:open.spotify.com)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

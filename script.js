@@ -9,6 +9,9 @@ class MusikquizkampenGame {
         this.selectedDirection = null; // 'before' o 'after'
         this.gameState = 'selecting'; // selecting, choosing_direction, revealed
         this.audioWindows = {}; // Para trackear ventanas de audio abiertas
+        this.timer = null; // Timer interval
+        this.timeRemaining = 10; // 10 segundos
+        this.timerActive = false;
         this.allCards = [
             {
                 id: 1,
@@ -16,7 +19,7 @@ class MusikquizkampenGame {
                 artist: "Boney M",
                 song: "Rasputin",
                 qrImage: "images/1978.png",
-                albumCover: "https://coverartarchive.org/release/0c1b9cb5-8c8e-4739-bc94-7d0a37c9c745/front-250",
+                spotifyId: "5lWSa1rmuSL6OBPOnkAqoa",
                 audioLink: "https://shabam.dk/link/rgcRN2"
             },
             {
@@ -25,7 +28,7 @@ class MusikquizkampenGame {
                 artist: "Vaughn Monroe",
                 song: "Let It Snow!",
                 qrImage: "images/1945.png",
-                albumCover: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png",
+                spotifyId: "0JsOdLtiQ8S44BpOyKcIui",
                 audioLink: "https://shabam.dk/link/hrR0v0"
             },
             {
@@ -34,7 +37,7 @@ class MusikquizkampenGame {
                 artist: "Daft Punk",
                 song: "Get Lucky",
                 qrImage: "images/2013.png",
-                albumCover: "https://coverartarchive.org/release/b75c7245-4a6e-4dd7-8c77-4bfbfc3f5138/front-250",
+                spotifyId: "69kOkLUCkxIZYexIgSG8rq",
                 audioLink: "https://shabam.dk/link/CuqvIR"
             },
             {
@@ -43,7 +46,7 @@ class MusikquizkampenGame {
                 artist: "The Beatles",
                 song: "Here Comes The Sun",
                 qrImage: "images/1965.png",
-                albumCover: "https://coverartarchive.org/release/dc28e81d-69a9-49c8-be79-ffe80ee8ee4d/front-250",
+                spotifyId: "6dGnYIeXmHdcikdzNNDMm2",
                 audioLink: "https://shabam.dk/link/QZwOPJ"
             },
             {
@@ -52,7 +55,7 @@ class MusikquizkampenGame {
                 artist: "TLC",
                 song: "Waterfalls",
                 qrImage: "images/1995.png",
-                albumCover: "https://upload.wikimedia.org/wikipedia/en/6/sixty/CrazySexyCool.jpg",
+                spotifyId: "2FRnf9qhLbvw8fu4IBXx78",
                 audioLink: "https://shabam.dk/link/t0gRQn"
             },
             {
@@ -61,7 +64,7 @@ class MusikquizkampenGame {
                 artist: "Marvin Gaye",
                 song: "Let's Get It On",
                 qrImage: "images/1973.png",
-                albumCover: "https://upload.wikimedia.org/wikipedia/en/4/4d/Lets_Get_It_On.jpg",
+                spotifyId: "4e85pMgZ87WyHdVfgM0fOv",
                 audioLink: "https://shabam.dk/link/S5nWeQ"
             },
             {
@@ -70,7 +73,7 @@ class MusikquizkampenGame {
                 artist: "Simon & Garfunkel",
                 song: "Mrs. Robinson",
                 qrImage: "images/1968.png",
-                albumCover: "https://upload.wikimedia.org/wikipedia/en/6/63/Bookends.jpg",
+                spotifyId: "6TIBCzMlVzGNIXRJWNZOL4",
                 audioLink: "https://shabam.dk/link/9KMTR5"
             },
             {
@@ -79,7 +82,7 @@ class MusikquizkampenGame {
                 artist: "George Ezra",
                 song: "Shotgun",
                 qrImage: "images/2018.png",
-                albumCover: "https://upload.wikimedia.org/wikipedia/en/5/5c/George_Ezra_-_Shotgun.png",
+                spotifyId: "3DamFFqW32WihKkTVlwTYQ",
                 audioLink: "https://shabam.dk/link/14gihZ"
             }
         ];
@@ -101,7 +104,26 @@ class MusikquizkampenGame {
 
     init() {
         this.bindEvents();
+        this.preloadSpotifyEmbeds();
         this.startRound();
+    }
+
+    preloadSpotifyEmbeds() {
+        // Precargar los iframes de Spotify en segundo plano
+        this.cardDatabase.forEach(card => {
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://open.spotify.com/embed/track/${card.spotifyId}?utm_source=generator&theme=0`;
+            iframe.style.display = 'none';
+            iframe.width = '100%';
+            iframe.height = '152';
+            iframe.frameBorder = '0';
+            iframe.loading = 'eager';
+            iframe.setAttribute('allow', 'autoplay; clipboard-write; fullscreen; picture-in-picture');
+            document.body.appendChild(iframe);
+
+            // Guardar referencia para uso posterior
+            card.preloadedIframe = iframe;
+        });
     }
 
     bindEvents() {
@@ -139,7 +161,165 @@ class MusikquizkampenGame {
         // Mostrar la línea de tiempo con años (cartas adivinadas + año aleatorio)
         this.displayTimeline();
 
+        // Iniciar el timer
+        this.startTimer();
+
         console.log('Estado después de startRound:', this.gameState);
+    }
+
+    startTimer() {
+        // Resetear timer
+        this.stopTimer();
+        this.timeRemaining = 10;
+        this.timerActive = true;
+
+        // Mostrar barra de tiempo
+        const timerBarContainer = document.getElementById('timerBarContainer');
+        const timerBar = document.getElementById('timerBar');
+        if (timerBarContainer) {
+            timerBarContainer.style.display = 'block';
+        }
+        if (timerBar) {
+            timerBar.style.width = '0%';
+        }
+
+        const totalTime = 10;
+        let elapsed = 0;
+
+        // Actualizar barra cada 100ms para animación suave
+        this.timer = setInterval(() => {
+            elapsed += 0.1;
+            const percentage = (elapsed / totalTime) * 100;
+
+            if (timerBar) {
+                timerBar.style.width = percentage + '%';
+            }
+
+            // Tiempo agotado
+            if (elapsed >= totalTime) {
+                this.stopTimer();
+                this.handleTimeOut();
+            }
+        }, 100);
+    }
+
+    stopTimer(keepActive = false) {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        if (!keepActive) {
+            this.timerActive = false;
+
+            // Ocultar barra de tiempo
+            const timerBarContainer = document.getElementById('timerBarContainer');
+            if (timerBarContainer) {
+                timerBarContainer.style.display = 'none';
+            }
+        }
+    }
+
+    pauseTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    resumeTimer() {
+        if (!this.timerActive) return;
+
+        const timerBar = document.getElementById('timerBar');
+        if (!timerBar) return;
+
+        // Obtener el porcentaje actual
+        const currentWidth = parseFloat(timerBar.style.width) || 0;
+        const totalTime = 10;
+        let elapsed = (currentWidth / 100) * totalTime;
+
+        this.timer = setInterval(() => {
+            elapsed += 0.1;
+            const percentage = (elapsed / totalTime) * 100;
+
+            if (timerBar) {
+                timerBar.style.width = percentage + '%';
+            }
+
+            // Tiempo agotado
+            if (elapsed >= totalTime) {
+                this.stopTimer();
+                this.handleTimeOut();
+            }
+        }, 100);
+    }
+
+    handleTimeOut() {
+        console.log('⏰ Tiempo agotado!');
+
+        // Si ya se reveló la respuesta, no hacer nada
+        if (this.gameState === 'revealed') {
+            return;
+        }
+
+        // Cambiar estado a revealed
+        this.gameState = 'revealed';
+        document.body.classList.add('game-revealed');
+
+        // Obtener la primera carta del mazo
+        const currentCard = this.currentRound[0];
+        if (!currentCard) {
+            console.log('No hay cartas disponibles');
+            return;
+        }
+
+        this.selectedCard = currentCard;
+
+        // Mostrar modal de incorrecto
+        const resultContainer = document.getElementById('resultContainer');
+        const resultContent = document.getElementById('resultContent');
+
+        if (resultContainer && resultContent) {
+            const resultCard = resultContainer.querySelector('.result-card');
+            if (resultCard) {
+                resultCard.classList.add('incorrect-result');
+                resultCard.classList.remove('correct-result');
+            }
+
+            resultContent.innerHTML = `
+                <div class="result-indicator incorrect">¡Tiempo agotado!</div>
+                <iframe src="https://open.spotify.com/embed/track/${currentCard.spotifyId}?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>
+                <div class="year-display">${currentCard.year}</div>
+                <div class="song-info">
+                    <div class="artist">${currentCard.artist}</div>
+                    <div class="song">${currentCard.song}</div>
+                </div>
+                <button class="next-button" onclick="game.nextRound()">Siguiente</button>
+            `;
+
+            resultContainer.style.display = 'flex';
+        }
+
+        // Marcar la carta como incorrecta visualmente
+        const selectedCardElement = document.querySelector(`[data-card-id="${currentCard.id}"]`);
+        if (selectedCardElement) {
+            selectedCardElement.classList.add('incorrect-answer');
+
+            // Ocultar imagen QR (el iframe de Spotify ya muestra la portada)
+            const qrImage = selectedCardElement.querySelector('img');
+            if (qrImage) {
+                qrImage.style.display = 'none';
+            }
+
+            const songLabel = selectedCardElement.querySelector('.song-label');
+            if (songLabel) {
+                songLabel.textContent = `${currentCard.artist} - ${currentCard.song}`;
+                songLabel.style.fontSize = '12px';
+            }
+        }
+
+        // Remover la carta del currentRound para que pase a la siguiente
+        this.currentRound = this.currentRound.filter(card => card.id !== currentCard.id);
+        console.log('Carta removida por timeout. Cartas restantes:', this.currentRound.length);
     }
 
     displayQRCards() {
@@ -392,6 +572,9 @@ class MusikquizkampenGame {
     checkDirectionAndReveal() {
         if (!this.selectedCard || !this.selectedDirection) return;
 
+        // Detener el timer cuando se coloca la carta
+        this.stopTimer();
+
         this.gameState = 'revealed';
         document.body.classList.add('game-revealed'); // Deshabilitar cartas visualmente
 
@@ -488,12 +671,11 @@ class MusikquizkampenGame {
                 selectedCardElement.classList.remove('correct-answer');
             }
 
-            // Mostrar la tapa del disco en vez del QR
+            // Ocultar imagen QR (el iframe de Spotify ya muestra la portada)
             const qrImage = selectedCardElement.querySelector('img');
             if (qrImage) {
-                qrImage.src = this.selectedCard.albumCover;
+                qrImage.style.display = 'none';
             }
-
 
             // Cambiar el texto del label
             const songLabel = selectedCardElement.querySelector('.song-label');
@@ -526,7 +708,7 @@ class MusikquizkampenGame {
 
             resultContent.innerHTML = `
                 <div class="result-indicator ${resultClass}">${resultText}</div>
-                <img src="${this.selectedCard.albumCover}" alt="Album Cover" class="album-cover">
+                <iframe src="https://open.spotify.com/embed/track/${this.selectedCard.spotifyId}?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>
                 <div class="year-display">${actualYear}</div>
                 <div class="song-info">
                     <div class="artist">${this.selectedCard.artist}</div>
@@ -665,6 +847,7 @@ class MusikquizkampenGame {
                             ).join('')}
                         </div>
                     </div>
+                    <button class="btn btn-share" onclick="game.shareResult()">📤 Compartir Resultado</button>
                     <button class="btn btn-restart" onclick="location.reload()">Jugar de Nuevo</button>
                 </div>
             `;
@@ -678,6 +861,51 @@ class MusikquizkampenGame {
         if (scoreElement) {
             scoreElement.textContent = this.score;
         }
+    }
+
+    shareResult() {
+        // Crear texto para compartir
+        const text = `🎵 Musikquizkampen 🎵\n\n` +
+                     `Puntuación: ${this.score} puntos\n` +
+                     `Cartas acertadas: ${this.guessedCards.length}/5\n\n` +
+                     `Mi Timeline:\n` +
+                     `${this.guessedCards.sort((a, b) => a.year - b.year).map(card =>
+                         `${card.year} - ${card.artist}`
+                     ).join('\n')}\n\n` +
+                     `¡Juega tú también! ${window.location.href}`;
+
+        // Usar Web Share API si está disponible (móvil)
+        if (navigator.share) {
+            navigator.share({
+                title: 'Musikquizkampen - Mi Resultado',
+                text: text
+            }).then(() => {
+                console.log('Compartido exitosamente');
+            }).catch((error) => {
+                console.log('Error al compartir:', error);
+                // Fallback a copiar al portapapeles
+                this.copyToClipboard(text);
+            });
+        } else {
+            // Fallback para desktop - copiar al portapapeles
+            this.copyToClipboard(text);
+        }
+    }
+
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('✅ Resultado copiado al portapapeles!\nPuedes pegarlo en WhatsApp, redes sociales, etc.');
+        }).catch((error) => {
+            console.error('Error al copiar:', error);
+            // Fallback adicional
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('✅ Resultado copiado al portapapeles!');
+        });
     }
 
     openProtectedAudio(audioLink, cardId) {
@@ -811,4 +1039,113 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Configurar menú hamburguesa
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const menuDropdown = document.getElementById('menuDropdown');
+    const menuHacks = document.getElementById('menuHacks');
+    const menuChangelog = document.getElementById('menuChangelog');
+
+    if (hamburgerMenu && menuDropdown) {
+        hamburgerMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = menuDropdown.style.display === 'flex';
+            menuDropdown.style.display = isOpen ? 'none' : 'flex';
+
+            // Animación de transición
+            if (!isOpen) {
+                hamburgerMenu.classList.add('menu-open');
+                setTimeout(() => {
+                    hamburgerMenu.textContent = '×';
+                    hamburgerMenu.classList.remove('menu-open');
+                    hamburgerMenu.classList.add('is-x');
+                }, 150);
+            } else {
+                hamburgerMenu.classList.add('menu-open');
+                setTimeout(() => {
+                    hamburgerMenu.textContent = '☰';
+                    hamburgerMenu.classList.remove('menu-open');
+                    hamburgerMenu.classList.remove('is-x');
+                }, 150);
+            }
+
+            // Pausar/reanudar el timer al abrir/cerrar el menú
+            if (!isOpen) {
+                game.pauseTimer();
+            } else {
+                game.resumeTimer();
+            }
+        });
+    }
+
+    if (menuHacks) {
+        menuHacks.addEventListener('click', () => {
+            toggleDebugMode();
+            menuDropdown.style.display = 'none';
+            hamburgerMenu.textContent = '☰';
+
+            // Reanudar timer al cerrar menú
+            game.resumeTimer();
+        });
+    }
+
+    // Cerrar menú al hacer clic fuera del contenido
+    if (menuDropdown) {
+        menuDropdown.addEventListener('click', (e) => {
+            if (e.target === menuDropdown) {
+                menuDropdown.style.display = 'none';
+                hamburgerMenu.textContent = '☰';
+
+                // Reanudar timer al cerrar menú
+                game.resumeTimer();
+            }
+        });
+    }
 });
+
+// Variable para estado de debug
+let debugEnabled = false;
+
+function toggleDebugMode() {
+    debugEnabled = !debugEnabled;
+    const style = document.createElement('style');
+    style.id = 'debug-style';
+
+    if (debugEnabled) {
+        // Mostrar años en cartas, labels y bordes de contenedores
+        style.innerHTML = `
+            .debug-year {
+                display: block !important;
+            }
+            .game-board::before,
+            .qr-selection-area::before,
+            .qr-cards-grid::before,
+            .timeline-container::before,
+            .timeline-years::before {
+                display: block !important;
+            }
+            .game-board {
+                border-color: purple !important;
+            }
+            .qr-selection-area {
+                border-color: blue !important;
+            }
+            .qr-cards-grid {
+                border-color: green !important;
+            }
+            .timeline-container {
+                border-color: red !important;
+            }
+            .timeline-years {
+                border-color: orange !important;
+            }
+        `;
+        document.head.appendChild(style);
+    } else {
+        // Ocultar debug
+        const existingStyle = document.getElementById('debug-style');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+    }
+}

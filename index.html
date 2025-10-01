@@ -8,6 +8,11 @@
 </head>
 <body>
     <div class="game-container">
+        <!-- Barra de tiempo -->
+        <div class="timer-bar-container" id="timerBarContainer" style="display: none;">
+            <div class="timer-bar" id="timerBar"></div>
+        </div>
+
         <header class="game-header">
             <h1>Musikquizkampen</h1>
             <div class="score">Puntos: <span id="score">0</span></div>
@@ -71,8 +76,19 @@
         </div>
     </div>
 
-    <!-- Versión -->
-    <div class="version-indicator" id="versionIndicator">v0.3</div>
+    <!-- Menú hamburguesa -->
+    <div class="hamburger-menu" id="hamburgerMenu">☰</div>
+
+    <!-- Menú desplegable -->
+    <div class="menu-dropdown" id="menuDropdown" style="display: none;">
+        <div class="menu-content">
+            <div class="menu-item" id="menuHacks">
+                <span>🔧 Hacks</span>
+            </div>
+            <!-- Versión -->
+            <div class="version-indicator" id="versionIndicator">v0.6</div>
+        </div>
+    </div>
 
     <!-- Modal de Changelog -->
     <div class="changelog-modal" id="changelogModal" style="display: none;">
@@ -82,6 +98,36 @@
                 <button class="close-modal" id="closeModal">&times;</button>
             </div>
             <div class="changelog-body">
+                <h3>v0.6 - Menú Hamburguesa y Mejoras UX</h3>
+                <ul>
+                    <li>Menú hamburguesa con panel lateral deslizable desde la derecha</li>
+                    <li>Animación de transición suave entre icono ☰ y X con rotación</li>
+                    <li>Menú con fondo semi-transparente y efecto blur</li>
+                    <li>Versión movida al interior del menú (abajo al centro)</li>
+                    <li>Opción "Hacks" para activar modo debug (años en cartas + bordes de contenedores)</li>
+                    <li>Timer se pausa automáticamente al abrir el menú y se reanuda al cerrarlo</li>
+                    <li>Eliminación de warnings de consola relacionados con Spotify embeds</li>
+                </ul>
+
+                <h3>v0.5 - Mejoras de Layout Responsive</h3>
+                <ul>
+                    <li>Optimización del layout para iPad y diferentes tamaños de pantalla</li>
+                    <li>Zona de drop (timeline) más grande y accesible</li>
+                    <li>Mejor distribución de espacios entre cartas y zona de drop</li>
+                    <li>Ajustes de altura automática para contenedores principales</li>
+                    <li>Sistema de debug visual para identificar contenedores (desactivado por defecto)</li>
+                </ul>
+
+                <h3>v0.4 - Timer y Integración con Spotify</h3>
+                <ul>
+                    <li>Barra de tiempo de 10 segundos por carta</li>
+                    <li>Si el tiempo se agota, muestra modal de incorrecto y pasa a la siguiente carta</li>
+                    <li>Integración con Spotify: reproductor embebido con portadas oficiales</li>
+                    <li>Botón "Compartir Resultado" al finalizar el juego</li>
+                    <li>Compartir resultados por WhatsApp, redes sociales o copiar al portapapeles</li>
+                    <li>Mejoras visuales en la barra de progreso con gradiente de colores</li>
+                </ul>
+
                 <h3>v0.3 - Selección Aleatoria y Más Canciones</h3>
                 <ul>
                     <li>Ampliado el catálogo de 4 a 8 canciones diferentes</li>
@@ -123,7 +169,7 @@
                 <button class="close-audio-modal" id="closeAudioModal">&times;</button>
             </div>
             <div class="audio-modal-body">
-                <iframe id="audioIframe" src="" frameborder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+                <iframe id="audioIframe" src="" frameborder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture"></iframe>
             </div>
         </div>
     </div>
