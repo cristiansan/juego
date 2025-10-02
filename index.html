@@ -48,6 +48,7 @@
                 <div class="player-buttons" id="playerButtons">
                     <!-- Botones 1-10 se generarán aquí -->
                 </div>
+                <button class="btn-instructions" id="btnInstructionsSelection">📖 Instrucciones</button>
             </div>
         </div>
 
@@ -67,6 +68,7 @@
             <div class="ready-content">
                 <h2 id="readyPlayerName">¿Listo para jugar?</h2>
                 <button class="btn-play" id="btnPlay">▶ PLAY</button>
+                <button class="btn-instructions" id="btnInstructionsReady">📖 Instrucciones</button>
             </div>
         </div>
 
@@ -147,14 +149,26 @@
     <!-- Menú desplegable -->
     <div class="menu-dropdown" id="menuDropdown" style="display: none;">
         <div class="menu-content">
+            <!-- Versión arriba -->
+            <div class="menu-version" id="versionIndicator">v0.8</div>
+
             <div class="menu-item" id="menuProfile">
                 <span>👤 Profile</span>
+            </div>
+            <div class="menu-item" id="menuRanking">
+                <span>🏆 Ranking</span>
+            </div>
+            <div class="menu-item" id="menuCreateList">
+                <span>📝 Create List</span>
             </div>
             <div class="menu-item" id="menuConfig">
                 <span>⚙️ Config</span>
             </div>
-            <!-- Versión -->
-            <div class="version-indicator" id="versionIndicator">v0.7</div>
+
+            <!-- Logout abajo -->
+            <div class="menu-item menu-logout" id="menuLogout">
+                <span>🚪 Logout</span>
+            </div>
         </div>
     </div>
 
@@ -227,12 +241,82 @@
                         <span class="config-value" id="themeText">Theme Clear</span>
                     </div>
                 </div>
-                <div class="config-section">
+                <div class="config-section" id="configHacksSection" style="display: none;">
                     <h3>Desarrollo</h3>
                     <div class="config-option" id="configHacks">
                         <span class="config-label">🔧 Hacks</span>
                         <span class="config-value" id="hacksStatus">OFF</span>
                     </div>
+                </div>
+                <div class="config-section">
+                    <h3>Soporte</h3>
+                    <div class="config-option" id="configContact">
+                        <span class="config-label">📧 Contact Us</span>
+                        <span class="config-value">→</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Contact -->
+    <div class="contact-modal" id="contactModal" style="display: none;">
+        <div class="contact-content">
+            <div class="contact-header">
+                <h2>📧 Contact Us</h2>
+                <button class="close-contact-modal" id="closeContactModal">&times;</button>
+            </div>
+            <div class="contact-body">
+                <form id="contactForm">
+                    <div class="form-group" id="nameGroup">
+                        <label for="contactName">Nombre</label>
+                        <input type="text" id="contactName" placeholder="Tu nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">Email</label>
+                        <input type="email" id="contactEmail" placeholder="tu@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactMessage">Mensaje</label>
+                        <textarea id="contactMessage" placeholder="Escribe tu mensaje..." maxlength="400" required></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/400
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-send-message">Enviar mensaje</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Ranking -->
+    <div class="ranking-modal" id="rankingModal" style="display: none;">
+        <div class="ranking-content">
+            <div class="ranking-header">
+                <h2>🏆 Ranking</h2>
+                <button class="close-ranking-modal" id="closeRankingModal">&times;</button>
+            </div>
+            <div class="ranking-body">
+                <!-- Lista de ranking -->
+                <div class="ranking-list" id="rankingList">
+                    <div class="ranking-loading">Cargando ranking...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Create List (En Construcción) -->
+    <div class="create-list-modal" id="createListModal" style="display: none;">
+        <div class="create-list-content">
+            <div class="create-list-header">
+                <h2>📝 Create List</h2>
+                <button class="close-create-list-modal" id="closeCreateListModal">&times;</button>
+            </div>
+            <div class="create-list-body">
+                <div class="construction-message">
+                    <div class="construction-icon">🚧</div>
+                    <h3>En Construcción...</h3>
+                    <p>Esta funcionalidad estará disponible próximamente.</p>
                 </div>
             </div>
         </div>
@@ -246,6 +330,20 @@
                 <button class="close-modal" id="closeModal">&times;</button>
             </div>
             <div class="changelog-body">
+                <h3>v0.8 - Perfiles, Ranking y Mejoras UX</h3>
+                <ul>
+                    <li>Modal de Profile con estadísticas (partidas, puntos, promedio)</li>
+                    <li>Modal de Ranking con historial de partidas y nombres de jugadores</li>
+                    <li>Ranking sin duplicados: muestra mejor puntaje de cada jugador por usuario registrado</li>
+                    <li>Modal de Contact Us con formulario (límite 400 caracteres)</li>
+                    <li>Modal de Instrucciones con 5 pasos ilustrados</li>
+                    <li>Opción Hacks solo visible para usuarios admin</li>
+                    <li>Botón Logout en menú</li>
+                    <li>Nombres de jugadores precargados como "Jugador 1", "Jugador 2", etc.</li>
+                    <li>Tiempo de respuesta aumentado de 10 segundos a 1 minuto</li>
+                    <li>Integración completa con Firebase Firestore para guardar partidas</li>
+                </ul>
+
                 <h3>v0.7 - Mejoras Visuales, Multijugador y Login</h3>
                 <ul>
                     <li>Splash screen de bienvenida con logo y título (2 segundos)</li>
@@ -335,13 +433,60 @@
         </div>
     </div>
 
+    <!-- Modal de Instrucciones -->
+    <div class="instructions-modal" id="instructionsModal" style="display: none;">
+        <div class="instructions-content">
+            <div class="instructions-header">
+                <h2>📖 Cómo jugar</h2>
+                <button class="close-instructions-modal" id="closeInstructionsModal">&times;</button>
+            </div>
+            <div class="instructions-body">
+                <div class="instruction-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Escucha la canción</h3>
+                        <p>Presiona el botón Play o escanea el código QR para escuchar la canción en Spotify.</p>
+                    </div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Adivina el año</h3>
+                        <p>Piensa en qué año crees que fue lanzada la canción.</p>
+                    </div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Arrastra la carta</h3>
+                        <p>Arrastra la carta a la línea de tiempo en la posición correcta según el año.</p>
+                    </div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Gana puntos</h3>
+                        <p>Si aciertas, ganas +20 puntos. La carta se coloca en la línea de tiempo.</p>
+                    </div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Completa el juego</h3>
+                        <p>Juega las 5 canciones y acumula la mayor cantidad de puntos posible.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase Scripts -->
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, query, orderBy, limit, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -373,6 +518,8 @@
         window.firestoreGetDoc = getDoc;
         window.firestoreUpdateDoc = updateDoc;
         window.firestoreIncrement = increment;
+        window.firestoreQuery = { collection, query, orderBy, limit, where, addDoc };
+        window.firestoreGetDocs = getDocs;
     </script>
 
     <script src="script.js"></script>

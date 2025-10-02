@@ -36,16 +36,20 @@ Este es el primer boceto del mismo, en papel:
 - [qrcode](https://www.npmjs.com/package/qrcode) - Generación de códigos QR
 
 
-## 📝 Versión actual: v0.6
+## 📝 Versión actual: v0.8
 
 ### Últimas actualizaciones
 
-- Menú hamburguesa con panel lateral deslizable y animación
-- Timer se pausa al abrir el menú y se reanuda al cerrarlo
-- Opción "Hacks" para modo debug (años en cartas + bordes de contenedores)
-- Versión movida al interior del menú
-- Menú con fondo semi-transparente y efecto blur
-- Transición suave entre icono ☰ y X con rotación
+- Modal de Profile con estadísticas (partidas, puntos, promedio)
+- Modal de Ranking con historial de partidas y nombres de jugadores
+- Ranking sin duplicados por jugador/usuario registrado
+- Modal de Contact Us con formulario de 400 caracteres
+- Modal de Instrucciones con 5 pasos ilustrados
+- Opción Hacks solo visible para usuarios admin
+- Botón Logout en menú
+- Nombres de jugadores precargados
+- Tiempo de respuesta aumentado a 1 minuto
+- Integración completa con Firebase Firestore
 
 ## 📄 Licencia
 

@@ -10,7 +10,7 @@ class MusikquizkampenGame {
         this.gameState = 'selecting'; // selecting, choosing_direction, revealed
         this.audioWindows = {}; // Para trackear ventanas de audio abiertas
         this.timer = null; // Timer interval
-        this.timeRemaining = 10; // 10 segundos
+        this.timeRemaining = 60; // 60 segundos (1 minuto)
         this.timerActive = false;
         this.players = []; // Array de jugadores {name: string, score: number, cardsPlayed: number}
         this.currentPlayerIndex = 0; // Índice del jugador actual
@@ -199,6 +199,7 @@ class MusikquizkampenGame {
             input.type = 'text';
             input.className = 'player-name-input';
             input.placeholder = `Jugador ${i + 1}`;
+            input.value = `Jugador ${i + 1}`;
             input.id = `playerName${i}`;
             input.maxLength = 8;
             inputs.appendChild(input);
@@ -321,7 +322,7 @@ class MusikquizkampenGame {
     startTimer() {
         // Resetear timer
         this.stopTimer();
-        this.timeRemaining = 10;
+        this.timeRemaining = 60;
         this.timerActive = true;
 
         // Mostrar barra de tiempo
@@ -334,7 +335,7 @@ class MusikquizkampenGame {
             timerBar.style.width = '0%';
         }
 
-        const totalTime = 10;
+        const totalTime = 60;
         let elapsed = 0;
 
         // Actualizar barra cada 100ms para animación suave
@@ -385,7 +386,7 @@ class MusikquizkampenGame {
 
         // Obtener el porcentaje actual
         const currentWidth = parseFloat(timerBar.style.width) || 0;
-        const totalTime = 10;
+        const totalTime = 60;
         let elapsed = (currentWidth / 100) * totalTime;
 
         this.timer = setInterval(() => {
@@ -1125,7 +1126,7 @@ class MusikquizkampenGame {
 
         // Detener y resetear timer
         this.stopTimer();
-        this.timeRemaining = 10;
+        this.timeRemaining = 60;
         this.timerActive = false;
 
         // Resetear todas las variables del juego
@@ -1288,7 +1289,7 @@ class MusikquizkampenGame {
             } else {
                 // Guardar estadísticas en Firebase si está registrado
                 if (!isGuestMode && currentUser && !currentUser.isGuest) {
-                    saveGameStats(this.score);
+                    saveGameStats(this.score, this.playerCount, this.players);
                 }
 
                 qrCardsGrid.innerHTML = `
@@ -1618,9 +1619,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const configHacks = document.getElementById('configHacks');
     const themeText = document.getElementById('themeText');
     const hacksStatus = document.getElementById('hacksStatus');
+    const configHacksSection = document.getElementById('configHacksSection');
 
     if (menuConfig && configModal) {
-        menuConfig.addEventListener('click', () => {
+        menuConfig.addEventListener('click', async () => {
+            // Verificar si el usuario es admin
+            if (!isGuestMode && currentUser && !currentUser.isGuest && window.firebaseDb) {
+                try {
+                    const userRef = window.firestoreDoc(window.firebaseDb, 'users', currentUser.uid);
+                    const userSnap = await window.firestoreGetDoc(userRef);
+
+                    if (userSnap.exists()) {
+                        const userData = userSnap.data();
+                        // Mostrar Hacks solo si admin === true
+                        if (configHacksSection) {
+                            configHacksSection.style.display = userData.admin === true ? 'block' : 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error al verificar admin:', error);
+                    if (configHacksSection) {
+                        configHacksSection.style.display = 'none';
+                    }
+                }
+            } else {
+                // Guest users no ven Hacks
+                if (configHacksSection) {
+                    configHacksSection.style.display = 'none';
+                }
+            }
+
             configModal.style.display = 'flex';
             menuDropdown.style.display = 'none';
             hamburgerMenu.textContent = '☰';
@@ -1660,6 +1688,275 @@ document.addEventListener('DOMContentLoaded', () => {
         configHacks.addEventListener('click', () => {
             toggleDebugMode();
             hacksStatus.textContent = debugEnabled ? 'ON' : 'OFF';
+        });
+    }
+
+    // Configurar modal de Contact
+    const configContact = document.getElementById('configContact');
+    const contactModal = document.getElementById('contactModal');
+    const closeContactModal = document.getElementById('closeContactModal');
+    const contactForm = document.getElementById('contactForm');
+    const contactName = document.getElementById('contactName');
+    const contactEmail = document.getElementById('contactEmail');
+    const contactMessage = document.getElementById('contactMessage');
+    const charCount = document.getElementById('charCount');
+    const nameGroup = document.getElementById('nameGroup');
+
+    if (configContact && contactModal) {
+        configContact.addEventListener('click', () => {
+            // Verificar si es usuario registrado o guest
+            if (!isGuestMode && currentUser && !currentUser.isGuest) {
+                // Usuario registrado: ocultar campo nombre y autocompletar email
+                nameGroup.style.display = 'none';
+                contactName.removeAttribute('required');
+                contactEmail.value = currentUser.email || '';
+                contactEmail.readOnly = true;
+            } else {
+                // Guest: mostrar todos los campos
+                nameGroup.style.display = 'flex';
+                contactName.setAttribute('required', 'required');
+                contactEmail.value = '';
+                contactEmail.readOnly = false;
+            }
+
+            // Limpiar mensaje
+            contactMessage.value = '';
+            charCount.textContent = '0';
+
+            contactModal.style.display = 'flex';
+            configModal.style.display = 'none';
+        });
+    }
+
+    if (closeContactModal && contactModal) {
+        closeContactModal.addEventListener('click', () => {
+            contactModal.style.display = 'none';
+            game.resumeTimer();
+        });
+
+        // Cerrar al hacer click fuera del contenido
+        contactModal.addEventListener('click', (e) => {
+            if (e.target === contactModal) {
+                contactModal.style.display = 'none';
+                game.resumeTimer();
+            }
+        });
+    }
+
+    // Contador de caracteres
+    if (contactMessage && charCount) {
+        contactMessage.addEventListener('input', () => {
+            charCount.textContent = contactMessage.value.length;
+        });
+    }
+
+    // Enviar formulario
+    if (contactForm) {
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = isGuestMode || !currentUser || currentUser.isGuest
+                ? contactName.value.trim()
+                : currentUser.displayName || 'Usuario';
+            const email = contactEmail.value.trim();
+            const message = contactMessage.value.trim();
+
+            if (!email || !message) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            console.log('📧 Mensaje de contacto:', {
+                name,
+                email,
+                message,
+                timestamp: new Date().toISOString()
+            });
+
+            // Aquí puedes agregar integración con Firebase o servicio de email
+            alert('¡Mensaje enviado! Gracias por contactarnos.');
+            contactModal.style.display = 'none';
+            contactForm.reset();
+            charCount.textContent = '0';
+            game.resumeTimer();
+        });
+    }
+
+    // Configurar modal de Ranking
+    const menuRanking = document.getElementById('menuRanking');
+    const rankingModal = document.getElementById('rankingModal');
+    const closeRankingModal = document.getElementById('closeRankingModal');
+    const rankingList = document.getElementById('rankingList');
+
+    async function displayRanking() {
+        rankingList.innerHTML = '<div class="ranking-loading">Cargando ranking...</div>';
+
+        const games = await loadRanking();
+
+        if (games.length === 0) {
+            rankingList.innerHTML = '<div class="ranking-loading">No hay partidas disponibles</div>';
+            return;
+        }
+
+        // Agrupar juegos por userId-playerName para evitar duplicados
+        const bestGames = new Map();
+
+        games.forEach(game => {
+            game.players.forEach(player => {
+                // Crear clave única: userId + nombre del jugador
+                const key = `${game.userId}-${player.name}`;
+
+                // Si no existe o el score es mayor, actualizar
+                if (!bestGames.has(key) || bestGames.get(key).score < player.score) {
+                    bestGames.set(key, {
+                        userId: game.userId,
+                        userName: game.userName,
+                        userPhoto: game.userPhoto,
+                        playerName: player.name,
+                        score: player.score,
+                        timestamp: game.timestamp,
+                        playerCount: game.playerCount,
+                        allPlayers: game.players
+                    });
+                }
+            });
+        });
+
+        // Convertir a array y ordenar por puntaje
+        const rankedGames = Array.from(bestGames.values())
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 50); // Limitar a top 50
+
+        if (rankedGames.length === 0) {
+            rankingList.innerHTML = '<div class="ranking-loading">No hay partidas disponibles</div>';
+            return;
+        }
+
+        rankingList.innerHTML = '';
+        rankedGames.forEach((game, index) => {
+            const position = index + 1;
+            const positionClass = position === 1 ? 'top1' : position === 2 ? 'top2' : position === 3 ? 'top3' : '';
+
+            // Ordenar jugadores por puntaje
+            const sortedPlayers = [...game.allPlayers].sort((a, b) => b.score - a.score);
+            const playersHtml = sortedPlayers.map((p, i) =>
+                `<div class="player-score">${i + 1}. ${p.name}: ${p.score} pts</div>`
+            ).join('');
+
+            const date = new Date(game.timestamp);
+            const dateStr = date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            const item = document.createElement('div');
+            item.className = 'ranking-item';
+            item.innerHTML = `
+                <div class="ranking-position ${positionClass}">#${position}</div>
+                <img src="${game.userPhoto || 'https://via.placeholder.com/40'}" alt="${game.userName}" class="ranking-avatar">
+                <div class="ranking-info">
+                    <div class="ranking-name">Partida de ${game.userName}</div>
+                    <div class="ranking-date">${dateStr} - ${game.playerCount} ${game.playerCount === 1 ? 'jugador' : 'jugadores'}</div>
+                    <div class="ranking-players">${playersHtml}</div>
+                </div>
+            `;
+            rankingList.appendChild(item);
+        });
+    }
+
+    if (menuRanking && rankingModal) {
+        menuRanking.addEventListener('click', async () => {
+            rankingModal.style.display = 'flex';
+            menuDropdown.style.display = 'none';
+            hamburgerMenu.textContent = '☰';
+            await displayRanking();
+        });
+    }
+
+    if (closeRankingModal && rankingModal) {
+        closeRankingModal.addEventListener('click', () => {
+            rankingModal.style.display = 'none';
+            game.resumeTimer();
+        });
+
+        rankingModal.addEventListener('click', (e) => {
+            if (e.target === rankingModal) {
+                rankingModal.style.display = 'none';
+                game.resumeTimer();
+            }
+        });
+    }
+
+    // Configurar modal de Create List
+    const menuCreateList = document.getElementById('menuCreateList');
+    const createListModal = document.getElementById('createListModal');
+    const closeCreateListModal = document.getElementById('closeCreateListModal');
+
+    if (menuCreateList && createListModal) {
+        menuCreateList.addEventListener('click', () => {
+            createListModal.style.display = 'flex';
+            menuDropdown.style.display = 'none';
+            hamburgerMenu.textContent = '☰';
+        });
+    }
+
+    if (closeCreateListModal && createListModal) {
+        closeCreateListModal.addEventListener('click', () => {
+            createListModal.style.display = 'none';
+            game.resumeTimer();
+        });
+
+        createListModal.addEventListener('click', (e) => {
+            if (e.target === createListModal) {
+                createListModal.style.display = 'none';
+                game.resumeTimer();
+            }
+        });
+    }
+
+    // Configurar modal de Instrucciones
+    const instructionsModal = document.getElementById('instructionsModal');
+    const closeInstructionsModal = document.getElementById('closeInstructionsModal');
+    const btnInstructionsSelection = document.getElementById('btnInstructionsSelection');
+    const btnInstructionsReady = document.getElementById('btnInstructionsReady');
+
+    function openInstructions() {
+        instructionsModal.style.display = 'flex';
+    }
+
+    function closeInstructions() {
+        instructionsModal.style.display = 'none';
+    }
+
+    if (btnInstructionsSelection) {
+        btnInstructionsSelection.addEventListener('click', openInstructions);
+    }
+
+    if (btnInstructionsReady) {
+        btnInstructionsReady.addEventListener('click', openInstructions);
+    }
+
+    if (closeInstructionsModal) {
+        closeInstructionsModal.addEventListener('click', closeInstructions);
+    }
+
+    if (instructionsModal) {
+        instructionsModal.addEventListener('click', (e) => {
+            if (e.target === instructionsModal) {
+                closeInstructions();
+            }
+        });
+    }
+
+    // Configurar botón de logout del menú
+    const menuLogout = document.getElementById('menuLogout');
+    if (menuLogout) {
+        menuLogout.addEventListener('click', async () => {
+            try {
+                await window.firebaseSignOut(window.firebaseAuth);
+                console.log('Logout exitoso desde menú');
+                location.reload();
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión: ' + error.message);
+            }
         });
     }
 
@@ -1873,6 +2170,14 @@ async function createOrUpdateUser(user) {
                 createdAt: new Date().toISOString(),
                 totalGames: 0,
                 totalPoints: 0,
+                games1P: 0,
+                points1P: 0,
+                games2P: 0,
+                points2P: 0,
+                games3P: 0,
+                points3P: 0,
+                games4P: 0,
+                points4P: 0,
                 lastPlayed: null
             });
             console.log('✅ Usuario creado en Firestore');
@@ -1892,9 +2197,11 @@ async function createOrUpdateUser(user) {
     }
 }
 
-async function saveGameStats(points) {
+async function saveGameStats(points, playerCount = 1, players = []) {
     console.log('🎮 saveGameStats llamado:', {
         points,
+        playerCount,
+        players,
         currentUser: !!currentUser,
         isGuestMode,
         db: !!window.firebaseDb
@@ -1911,15 +2218,36 @@ async function saveGameStats(points) {
 
     try {
         console.log('📊 Guardando estadísticas para usuario:', currentUser.displayName);
-        const userRef = window.firestoreDoc(window.firebaseDb, 'users', currentUser.uid);
 
-        await window.firestoreUpdateDoc(userRef, {
+        // Actualizar stats del usuario
+        const userRef = window.firestoreDoc(window.firebaseDb, 'users', currentUser.uid);
+        const updateData = {
             totalGames: window.firestoreIncrement(1),
             totalPoints: window.firestoreIncrement(points),
             lastPlayed: new Date().toISOString()
-        });
+        };
 
-        console.log('✅ Estadísticas guardadas:', { points, timestamp: new Date() });
+        await window.firestoreUpdateDoc(userRef, updateData);
+
+        // Guardar el juego completo en la colección "games"
+        const { collection, addDoc } = window.firestoreQuery;
+        const gamesRef = collection(window.firebaseDb, 'games');
+
+        const gameData = {
+            userId: currentUser.uid,
+            userName: currentUser.displayName,
+            userPhoto: currentUser.photoURL,
+            playerCount: playerCount,
+            timestamp: new Date().toISOString(),
+            players: players.map(p => ({
+                name: p.name,
+                score: p.score
+            }))
+        };
+
+        await addDoc(gamesRef, gameData);
+
+        console.log('✅ Estadísticas y juego guardados:', { points, playerCount, timestamp: new Date() });
     } catch (error) {
         console.error('❌ Error al guardar estadísticas:', error);
         console.error('Error completo:', error.message, error.code);
@@ -1946,4 +2274,36 @@ async function loadUserStats() {
     }
 
     return null;
+}
+
+async function loadRanking() {
+    if (!window.firebaseDb) return [];
+
+    try {
+        const { collection, query, orderBy, limit } = window.firestoreQuery;
+        const gamesRef = collection(window.firebaseDb, 'games');
+
+        // Obtener los últimos 50 juegos ordenados por timestamp
+        const q = query(gamesRef, orderBy('timestamp', 'desc'), limit(50));
+        const querySnapshot = await window.firestoreGetDocs(q);
+
+        const games = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            games.push({
+                id: doc.id,
+                userId: data.userId,
+                userName: data.userName,
+                userPhoto: data.userPhoto,
+                playerCount: data.playerCount,
+                timestamp: data.timestamp,
+                players: data.players || []
+            });
+        });
+
+        return games;
+    } catch (error) {
+        console.error('❌ Error al cargar ranking:', error);
+        return [];
+    }
 }
