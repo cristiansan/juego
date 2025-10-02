@@ -1631,6 +1631,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (userSnap.exists()) {
                         const userData = userSnap.data();
+                        console.log('👤 Datos del usuario:', userData);
+                        console.log('🔑 Es admin?', userData.admin === true);
                         // Mostrar Hacks solo si admin === true
                         if (configHacksSection) {
                             configHacksSection.style.display = userData.admin === true ? 'block' : 'none';
@@ -1833,6 +1835,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         rankingList.innerHTML = '';
+
+        // Mostrar mensaje para usuarios guest al inicio
+        if (isGuestMode || !currentUser || currentUser.isGuest) {
+            const guestMessage = document.createElement('div');
+            guestMessage.className = 'guest-ranking-message';
+            guestMessage.style.cssText = 'background: #fff3cd; color: #856404; padding: 15px; margin: 10px; border-radius: 8px; text-align: center; font-weight: bold; border: 2px solid #ffc107;';
+            guestMessage.textContent = '⚠️ Solo usuarios registrados rankean';
+            rankingList.appendChild(guestMessage);
+        }
+
         rankedGames.forEach((game, index) => {
             const position = index + 1;
             const positionClass = position === 1 ? 'top1' : position === 2 ? 'top2' : position === 3 ? 'top3' : '';
