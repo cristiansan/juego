@@ -146,7 +146,7 @@ class MusikquizkampenGame {
         const playerButtons = document.getElementById('playerButtons');
         playerButtons.innerHTML = '';
 
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 10; i++) {
             const btn = document.createElement('button');
             btn.className = 'btn-player-count';
             btn.textContent = i;
@@ -166,7 +166,7 @@ class MusikquizkampenGame {
                 btn.style.opacity = '0.4';
                 btn.style.cursor = 'not-allowed';
                 btn.onclick = () => {
-                    alert('Modo multijugador completo próximamente. Por ahora máximo 2 jugadores.');
+                    alert('Disponible en la versión paga. Por ahora máximo 2 jugadores.');
                 };
             }
             else {
