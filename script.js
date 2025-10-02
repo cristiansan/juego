@@ -2004,22 +2004,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             // QR detectado
                             console.log('QR detectado:', code.data);
 
-                            // Verificar si es un link de Spotify
-                            if (code.data.includes('spotify.com/track/') || code.data.includes('spotify.link')) {
-                                spotifyLinkInput.value = code.data;
-                                qrResult.textContent = '✅ QR detectado correctamente';
-                                qrResult.style.display = 'block';
+                            // Aceptar cualquier QR - rellenar el campo
+                            spotifyLinkInput.value = code.data;
+                            qrResult.textContent = '✅ QR detectado correctamente';
+                            qrResult.style.background = '#28a745';
+                            qrResult.style.display = 'block';
 
-                                // Cerrar scanner después de 1 segundo
-                                setTimeout(() => {
-                                    stopQrScanner();
-                                    qrScannerModal.style.display = 'none';
-                                }, 1000);
-                            } else {
-                                qrResult.textContent = '⚠️ El QR no contiene un link de Spotify';
-                                qrResult.style.background = '#dc3545';
-                                qrResult.style.display = 'block';
-                            }
+                            // Cerrar scanner después de 1 segundo
+                            setTimeout(() => {
+                                stopQrScanner();
+                                qrScannerModal.style.display = 'none';
+                            }, 1000);
                         }
                     }
                 }, 100);
