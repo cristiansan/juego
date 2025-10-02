@@ -1942,7 +1942,114 @@ body.dragging .drop-zone-between {
 }
 
 .create-list-body {
-    padding: 40px 20px;
+    padding: 20px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+#createListForm {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: var(--foreground);
+}
+
+.form-group input {
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    background: var(--background);
+    color: var(--foreground);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 14px;
+    padding: 5px;
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 5px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--primary);
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.success-btn {
+    background: #28a745;
+}
+
+.primary-btn {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    font-size: 18px;
+    padding: 12px 24px;
+}
+
+.song-data {
+    background: var(--background);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.song-data p {
+    margin: 8px 0;
+}
+
+.song-data a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.song-data a:hover {
+    text-decoration: underline;
+}
+
+#currentListSongs {
+    margin-top: 20px;
+}
+
+#currentListSongs h3 {
+    margin-bottom: 10px;
+    color: var(--foreground);
+}
+
+#songsList {
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .construction-message {
@@ -1965,6 +2072,84 @@ body.dragging .drop-zone-between {
     margin: 0;
     font-size: 16px;
     color: var(--secondary);
+}
+
+/* Modal de QR Scanner */
+.qr-scanner-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3500;
+}
+
+.qr-scanner-content {
+    background: var(--popover);
+    border-radius: 15px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color: var(--foreground);
+}
+
+.qr-scanner-header {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    padding: 20px;
+    border-radius: 15px 15px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.qr-scanner-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: white;
+}
+
+.close-qr-scanner {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.close-qr-scanner:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.qr-scanner-body {
+    padding: 20px;
+    text-align: center;
+}
+
+#qrVideo {
+    width: 100%;
+    max-width: 500px;
+    border-radius: 10px;
+    background: #000;
+}
+
+.qr-result {
+    margin-top: 15px;
+    padding: 15px;
+    background: #28a745;
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
 }
 
 /* Modal de Instrucciones */

@@ -1900,12 +1900,339 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuCreateList = document.getElementById('menuCreateList');
     const createListModal = document.getElementById('createListModal');
     const closeCreateListModal = document.getElementById('closeCreateListModal');
+    const listNameInput = document.getElementById('listNameInput');
+    const listNameError = document.getElementById('listNameError');
+    const spotifyLinkInput = document.getElementById('spotifyLinkInput');
+    const loadSongBtn = document.getElementById('loadSongBtn');
+    const songPreview = document.getElementById('songPreview');
+    const songData = document.getElementById('songData');
+    const addToListBtn = document.getElementById('addToListBtn');
+    const songsList = document.getElementById('songsList');
+    const songCounter = document.getElementById('songCounter');
+    const saveListBtn = document.getElementById('saveListBtn');
+    const scanQrBtn = document.getElementById('scanQrBtn');
+    const qrScannerModal = document.getElementById('qrScannerModal');
+    const closeQrScanner = document.getElementById('closeQrScanner');
+    const qrVideo = document.getElementById('qrVideo');
+    const qrCanvas = document.getElementById('qrCanvas');
+    const qrResult = document.getElementById('qrResult');
+
+    let currentListName = '';
+    let currentSongs = [];
+    let currentSongPreview = null;
+    let qrStream = null;
+    let qrScanInterval = null;
 
     if (menuCreateList && createListModal) {
         menuCreateList.addEventListener('click', () => {
             createListModal.style.display = 'flex';
             menuDropdown.style.display = 'none';
             hamburgerMenu.textContent = '☰';
+            resetCreateListForm();
+        });
+    }
+
+    function resetCreateListForm() {
+        currentListName = '';
+        currentSongs = [];
+        currentSongPreview = null;
+        if (listNameInput) listNameInput.value = '';
+        if (spotifyLinkInput) spotifyLinkInput.value = '';
+        if (listNameError) listNameError.style.display = 'none';
+        if (songPreview) songPreview.style.display = 'none';
+        if (songsList) songsList.innerHTML = '';
+        if (songCounter) songCounter.textContent = '0';
+        if (saveListBtn) saveListBtn.style.display = 'none';
+    }
+
+    // Validar nombre de lista
+    async function validateListName(name) {
+        if (!name || name.trim() === '') {
+            return { valid: false, error: 'Por favor ingresa un nombre para la lista' };
+        }
+
+        // Verificar si existe en Firestore
+        if (window.firebaseDb && currentUser && !currentUser.isGuest) {
+            try {
+                const listsRef = window.firestoreCollection(window.firebaseDb, 'customLists');
+                const q = window.firestoreQuery.query(
+                    listsRef,
+                    window.firestoreQuery.where('userId', '==', currentUser.uid),
+                    window.firestoreQuery.where('name', '==', name.trim())
+                );
+                const querySnapshot = await window.firestoreGetDocs(q);
+
+                if (!querySnapshot.empty) {
+                    return { valid: false, error: 'Ya existe una lista con este nombre' };
+                }
+            } catch (error) {
+                console.error('Error al validar nombre:', error);
+            }
+        }
+
+        return { valid: true };
+    }
+
+    // Escanear QR
+    if (scanQrBtn) {
+        scanQrBtn.addEventListener('click', async () => {
+            try {
+                qrScannerModal.style.display = 'flex';
+                qrResult.style.display = 'none';
+
+                // Solicitar acceso a la cámara
+                qrStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+
+                qrVideo.srcObject = qrStream;
+                qrVideo.play();
+
+                // Iniciar escaneo
+                const canvasContext = qrCanvas.getContext('2d');
+
+                qrScanInterval = setInterval(() => {
+                    if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
+                        qrCanvas.width = qrVideo.videoWidth;
+                        qrCanvas.height = qrVideo.videoHeight;
+                        canvasContext.drawImage(qrVideo, 0, 0, qrCanvas.width, qrCanvas.height);
+
+                        const imageData = canvasContext.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                        if (code) {
+                            // QR detectado
+                            console.log('QR detectado:', code.data);
+
+                            // Verificar si es un link de Spotify
+                            if (code.data.includes('spotify.com/track/') || code.data.includes('spotify.link')) {
+                                spotifyLinkInput.value = code.data;
+                                qrResult.textContent = '✅ QR detectado correctamente';
+                                qrResult.style.display = 'block';
+
+                                // Cerrar scanner después de 1 segundo
+                                setTimeout(() => {
+                                    stopQrScanner();
+                                    qrScannerModal.style.display = 'none';
+                                }, 1000);
+                            } else {
+                                qrResult.textContent = '⚠️ El QR no contiene un link de Spotify';
+                                qrResult.style.background = '#dc3545';
+                                qrResult.style.display = 'block';
+                            }
+                        }
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                alert('No se pudo acceder a la cámara. Verifica los permisos.');
+                stopQrScanner();
+                qrScannerModal.style.display = 'none';
+            }
+        });
+    }
+
+    function stopQrScanner() {
+        if (qrScanInterval) {
+            clearInterval(qrScanInterval);
+            qrScanInterval = null;
+        }
+        if (qrStream) {
+            qrStream.getTracks().forEach(track => track.stop());
+            qrStream = null;
+        }
+        if (qrVideo) {
+            qrVideo.srcObject = null;
+        }
+    }
+
+    if (closeQrScanner) {
+        closeQrScanner.addEventListener('click', () => {
+            stopQrScanner();
+            qrScannerModal.style.display = 'none';
+        });
+
+        qrScannerModal.addEventListener('click', (e) => {
+            if (e.target === qrScannerModal) {
+                stopQrScanner();
+                qrScannerModal.style.display = 'none';
+            }
+        });
+    }
+
+    // Cargar datos de Spotify
+    if (loadSongBtn) {
+        loadSongBtn.addEventListener('click', async () => {
+            const link = spotifyLinkInput.value.trim();
+
+            if (!link) {
+                alert('Por favor ingresa un link de Spotify');
+                return;
+            }
+
+            // Validar que sea un link de Spotify
+            if (!link.includes('open.spotify.com/track/')) {
+                alert('Por favor ingresa un link válido de Spotify');
+                return;
+            }
+
+            loadSongBtn.disabled = true;
+            loadSongBtn.textContent = '⏳ Cargando...';
+
+            try {
+                const response = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link)}`);
+                const data = await response.json();
+
+                // Extraer información
+                const title = data.title || 'Desconocido';
+                const [songName, artistName] = title.split(' · ') || [title, 'Desconocido'];
+
+                currentSongPreview = {
+                    name: songName,
+                    artist: artistName,
+                    spotifyUrl: link,
+                    year: new Date().getFullYear() // Por ahora usamos año actual, luego lo mejoramos
+                };
+
+                // Mostrar preview
+                songData.innerHTML = `
+                    <p><strong>🎵 Canción:</strong> ${currentSongPreview.name}</p>
+                    <p><strong>👤 Artista:</strong> ${currentSongPreview.artist}</p>
+                    <p><strong>📅 Año:</strong> ${currentSongPreview.year}</p>
+                    <p><strong>🔗 Link:</strong> <a href="${currentSongPreview.spotifyUrl}" target="_blank">Ver en Spotify</a></p>
+                `;
+                songPreview.style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar canción:', error);
+                alert('Error al cargar la canción. Verifica el link.');
+            } finally {
+                loadSongBtn.disabled = false;
+                loadSongBtn.textContent = '🔍 Cargar';
+            }
+        });
+    }
+
+    // Agregar canción a la lista
+    if (addToListBtn) {
+        addToListBtn.addEventListener('click', async () => {
+            // Validar nombre de lista
+            const listName = listNameInput.value.trim();
+
+            if (!currentListName) {
+                const validation = await validateListName(listName);
+                if (!validation.valid) {
+                    listNameError.textContent = validation.error;
+                    listNameError.style.display = 'block';
+                    listNameInput.focus();
+                    return;
+                }
+                currentListName = listName;
+                listNameInput.disabled = true;
+                listNameError.style.display = 'none';
+            }
+
+            if (!currentSongPreview) {
+                alert('Por favor carga una canción primero');
+                return;
+            }
+
+            // Verificar que no esté duplicada
+            const isDuplicate = currentSongs.some(s => s.spotifyUrl === currentSongPreview.spotifyUrl);
+            if (isDuplicate) {
+                alert('Esta canción ya está en la lista');
+                return;
+            }
+
+            // Agregar a la lista actual
+            currentSongs.push({ ...currentSongPreview });
+
+            // Actualizar UI
+            updateSongsList();
+
+            // Limpiar preview
+            spotifyLinkInput.value = '';
+            songPreview.style.display = 'none';
+            currentSongPreview = null;
+
+            // Mostrar botón de guardar
+            saveListBtn.style.display = 'block';
+        });
+    }
+
+    function updateSongsList() {
+        if (!songsList || !songCounter) return;
+
+        songCounter.textContent = currentSongs.length;
+
+        if (currentSongs.length === 0) {
+            songsList.innerHTML = '<p style="color: #999;">No hay canciones agregadas</p>';
+            return;
+        }
+
+        songsList.innerHTML = currentSongs.map((song, index) => `
+            <div class="song-item" style="padding: 10px; margin: 5px 0; background: #f5f5f5; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>${index + 1}. ${song.name}</strong><br>
+                    <small>${song.artist} (${song.year})</small>
+                </div>
+                <button class="remove-song-btn" data-index="${index}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">❌</button>
+            </div>
+        `).join('');
+
+        // Agregar listeners para eliminar
+        document.querySelectorAll('.remove-song-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                currentSongs.splice(index, 1);
+                updateSongsList();
+                if (currentSongs.length === 0) {
+                    saveListBtn.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Guardar lista en Firestore
+    if (saveListBtn) {
+        saveListBtn.addEventListener('click', async () => {
+            if (currentSongs.length === 0) {
+                alert('Agrega al menos una canción a la lista');
+                return;
+            }
+
+            if (!currentUser || currentUser.isGuest) {
+                alert('Debes estar registrado para crear listas');
+                return;
+            }
+
+            saveListBtn.disabled = true;
+            saveListBtn.textContent = '⏳ Guardando...';
+
+            try {
+                const listData = {
+                    name: currentListName,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || 'Usuario',
+                    songs: currentSongs,
+                    songCount: currentSongs.length,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+
+                const listsRef = window.firestoreCollection(window.firebaseDb, 'customLists');
+                await window.firestoreAddDoc(listsRef, listData);
+
+                alert(`✅ Lista "${currentListName}" guardada exitosamente con ${currentSongs.length} canciones`);
+                createListModal.style.display = 'none';
+                resetCreateListForm();
+            } catch (error) {
+                console.error('Error al guardar lista:', error);
+                alert('Error al guardar la lista. Intenta nuevamente.');
+            } finally {
+                saveListBtn.disabled = false;
+                saveListBtn.textContent = '💾 Guardar Lista';
+            }
         });
     }
 

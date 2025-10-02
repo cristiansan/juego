@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Musikquizkampen</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
     <!-- Splash Screen -->
@@ -313,11 +314,50 @@
                 <button class="close-create-list-modal" id="closeCreateListModal">&times;</button>
             </div>
             <div class="create-list-body">
-                <div class="construction-message">
-                    <div class="construction-icon">🚧</div>
-                    <h3>En Construcción...</h3>
-                    <p>Esta funcionalidad estará disponible próximamente.</p>
+                <div id="createListForm">
+                    <div class="form-group">
+                        <label for="listNameInput">Nombre de la lista:</label>
+                        <input type="text" id="listNameInput" placeholder="Ej: Rock de los 80" maxlength="50">
+                        <div id="listNameError" class="error-message" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="spotifyLinkInput">Link de Spotify:</label>
+                        <input type="text" id="spotifyLinkInput" placeholder="Pega aquí el link de Spotify">
+                        <div style="display: flex; gap: 10px;">
+                            <button id="scanQrBtn" class="action-btn" style="flex: 1;">📷 Escanear QR</button>
+                            <button id="loadSongBtn" class="action-btn" style="flex: 1;">🔍 Cargar</button>
+                        </div>
+                    </div>
+
+                    <div id="songPreview" style="display: none;">
+                        <h3>Preview de la canción:</h3>
+                        <div id="songData" class="song-data"></div>
+                        <button id="addToListBtn" class="action-btn success-btn">✅ Agregar a la lista</button>
+                    </div>
+
+                    <div id="currentListSongs">
+                        <h3>Canciones en la lista (<span id="songCounter">0</span>):</h3>
+                        <div id="songsList"></div>
+                    </div>
+
+                    <button id="saveListBtn" class="action-btn primary-btn" style="display: none;">💾 Guardar Lista</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de QR Scanner -->
+    <div class="qr-scanner-modal" id="qrScannerModal" style="display: none;">
+        <div class="qr-scanner-content">
+            <div class="qr-scanner-header">
+                <h2>📷 Escanear código QR</h2>
+                <button class="close-qr-scanner" id="closeQrScanner">&times;</button>
+            </div>
+            <div class="qr-scanner-body">
+                <video id="qrVideo" autoplay playsinline></video>
+                <canvas id="qrCanvas" style="display: none;"></canvas>
+                <div id="qrResult" class="qr-result" style="display: none;"></div>
             </div>
         </div>
     </div>
