@@ -12,6 +12,10 @@ class MusikquizkampenGame {
         this.timer = null; // Timer interval
         this.timeRemaining = 10; // 10 segundos
         this.timerActive = false;
+        this.players = []; // Array de jugadores {name: string, score: number, cardsPlayed: number}
+        this.currentPlayerIndex = 0; // Índice del jugador actual
+        this.playerCount = 0; // Cantidad de jugadores
+        this.maxCardsPerPlayer = 5; // Máximo de cartas por jugador
         this.allCards = [
             {
                 id: 1,
@@ -86,16 +90,46 @@ class MusikquizkampenGame {
                 audioLink: "https://shabam.dk/link/14gihZ"
             }
         ];
-        this.cardDatabase = this.getRandomCards(5); // Seleccionar 5 cartas al azar
-        this.currentRound = [...this.cardDatabase]; // Cartas para elegir esta ronda
+        this.allCardsPool = [...this.allCards]; // Pool de todas las cartas disponibles
+        this.cardDatabase = []; // Se inicializará por jugador
+        this.currentRound = []; // Cartas para elegir esta ronda
         this.init();
     }
 
-    getRandomCards(count) {
+    getRandomCards(count, excludeCards = []) {
+        // Filtrar cartas que no estén en la lista de exclusión
+        let availableCards = this.allCards.filter(card =>
+            !excludeCards.some(excluded => excluded.id === card.id)
+        );
+
+        // Si no hay suficientes cartas disponibles, usar todas las cartas
+        if (availableCards.length < count) {
+            console.log('No hay suficientes cartas únicas, usando todas las cartas disponibles');
+            availableCards = [...this.allCards];
+        }
+
         // Hacer una copia del array y mezclarlo
-        const shuffled = [...this.allCards].sort(() => Math.random() - 0.5);
+        const shuffled = [...availableCards].sort(() => Math.random() - 0.5);
         // Retornar las primeras 'count' cartas
         return shuffled.slice(0, count);
+    }
+
+    getPlayerCards(playerIndex, count) {
+        // Generar cartas únicas para cada jugador
+        const usedCards = [];
+
+        // Recopilar cartas ya asignadas a otros jugadores EN ESTA RONDA
+        this.players.forEach((player, index) => {
+            if (index !== playerIndex && player.assignedCards && player.cardsPlayed < this.maxCardsPerPlayer) {
+                // Solo excluir cartas de jugadores que aún están jugando
+                usedCards.push(...player.assignedCards);
+            }
+        });
+
+        console.log(`Asignando ${count} cartas al jugador ${playerIndex}. Cartas en uso por otros: ${usedCards.length}`);
+
+        // Obtener cartas aleatorias que no estén en uso (o todas si no hay suficientes)
+        return this.getRandomCards(count, usedCards);
     }
 
     getRandomYear() {
@@ -104,8 +138,116 @@ class MusikquizkampenGame {
 
     init() {
         this.bindEvents();
-        this.preloadSpotifyEmbeds();
-        this.startRound();
+        // No precargamos embeds aquí, se hará cuando se asignen cartas a jugadores
+        this.showPlayerSelection();
+    }
+
+    showPlayerSelection() {
+        const playerButtons = document.getElementById('playerButtons');
+        playerButtons.innerHTML = '';
+
+        for (let i = 1; i <= 6; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-player-count';
+            btn.textContent = i;
+
+            // Si es modo invitado, solo permitir 1 jugador
+            if (isGuestMode && i > 1) {
+                btn.classList.add('disabled');
+                btn.style.opacity = '0.4';
+                btn.style.cursor = 'not-allowed';
+                btn.onclick = () => {
+                    alert('Inicia sesión con Google para jugar con más jugadores');
+                };
+            }
+            // Si está registrado con Google, solo permitir hasta 2 jugadores
+            else if (!isGuestMode && currentUser && !currentUser.isGuest && i > 2) {
+                btn.classList.add('disabled');
+                btn.style.opacity = '0.4';
+                btn.style.cursor = 'not-allowed';
+                btn.onclick = () => {
+                    alert('Modo multijugador completo próximamente. Por ahora máximo 2 jugadores.');
+                };
+            }
+            else {
+                btn.onclick = () => this.selectPlayerCount(i);
+            }
+
+            playerButtons.appendChild(btn);
+        }
+    }
+
+    selectPlayerCount(count) {
+        this.playerCount = count;
+        document.getElementById('playerSelectionModal').style.display = 'none';
+
+        if (count === 1) {
+            this.players = [{name: 'Jugador 1', score: 0, cardsPlayed: 0, assignedCards: []}];
+            this.showReadyScreen();
+        } else {
+            this.showPlayerNamesInput();
+        }
+    }
+
+    showPlayerNamesInput() {
+        const modal = document.getElementById('playerNamesModal');
+        const inputs = document.getElementById('playerNamesInputs');
+        inputs.innerHTML = '';
+
+        for (let i = 0; i < this.playerCount; i++) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'player-name-input';
+            input.placeholder = `Jugador ${i + 1}`;
+            input.id = `playerName${i}`;
+            input.maxLength = 8;
+            inputs.appendChild(input);
+        }
+
+        modal.style.display = 'flex';
+
+        document.getElementById('btnStartGame').onclick = () => this.startMultiplayerGame();
+    }
+
+    startMultiplayerGame() {
+        this.players = [];
+
+        for (let i = 0; i < this.playerCount; i++) {
+            const input = document.getElementById(`playerName${i}`);
+            const name = input.value.trim() || `Jugador ${i + 1}`;
+            this.players.push({name, score: 0, cardsPlayed: 0, assignedCards: []});
+        }
+
+        document.getElementById('playerNamesModal').style.display = 'none';
+        this.showReadyScreen();
+    }
+
+    showReadyScreen() {
+        const modal = document.getElementById('readyModal');
+        const playerName = document.getElementById('readyPlayerName');
+
+        if (this.playerCount === 1) {
+            playerName.textContent = '¿Listo para jugar?';
+        } else {
+            playerName.textContent = `${this.players[this.currentPlayerIndex].name}, ¿listo?`;
+        }
+
+        modal.style.display = 'flex';
+
+        document.getElementById('btnPlay').onclick = () => {
+            modal.style.display = 'none';
+
+            // Si el jugador aún no tiene cartas asignadas, asignarlas
+            const player = this.players[this.currentPlayerIndex];
+            if (!player.currentRound || player.currentRound.length === 0) {
+                this.resetPlayerRound();
+            } else {
+                // Cargar el estado guardado del jugador
+                this.loadPlayerState();
+            }
+
+            this.startRound();
+        };
     }
 
     preloadSpotifyEmbeds() {
@@ -132,6 +274,15 @@ class MusikquizkampenGame {
 
     startRound() {
         console.log('Iniciando nueva ronda. Cartas disponibles:', this.currentRound.length);
+
+        // Actualizar UI con nombre del jugador actual
+        const currentPlayerName = document.getElementById('currentPlayerName');
+        if (currentPlayerName && this.players.length > 0) {
+            currentPlayerName.textContent = this.players[this.currentPlayerIndex].name + ' - ';
+        }
+
+        // Actualizar puntuación
+        document.getElementById('score').textContent = this.score;
 
         // Resetear estado del juego
         this.gameState = 'selecting';
@@ -285,15 +436,17 @@ class MusikquizkampenGame {
                 resultCard.classList.remove('correct-result');
             }
 
+            const buttonAction = this.playerCount > 1 ? 'game.handleIncorrectAnswer()' : 'game.nextRound()';
+
             resultContent.innerHTML = `
                 <div class="result-indicator incorrect">¡Tiempo agotado!</div>
-                <iframe src="https://open.spotify.com/embed/track/${currentCard.spotifyId}?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>
+                <iframe src="https://open.spotify.com/embed/track/${currentCard.spotifyId}?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>
                 <div class="year-display">${currentCard.year}</div>
                 <div class="song-info">
                     <div class="artist">${currentCard.artist}</div>
                     <div class="song">${currentCard.song}</div>
                 </div>
-                <button class="next-button" onclick="game.nextRound()">Siguiente</button>
+                <button class="next-button" onclick="${buttonAction}">Siguiente</button>
             `;
 
             resultContainer.style.display = 'flex';
@@ -604,12 +757,12 @@ class MusikquizkampenGame {
 
                 if (position === 0) {
                     // Antes del año aleatorio (flecha ←)
-                    isCorrect = actualYear < this.randomYear;
-                    console.log(`BETWEEN-0 (ANTES): ${actualYear} < ${this.randomYear} = ${isCorrect}`);
+                    isCorrect = actualYear <= this.randomYear;
+                    console.log(`BETWEEN-0 (ANTES): ${actualYear} <= ${this.randomYear} = ${isCorrect}`);
                 } else {
                     // Después del año aleatorio (flecha →)
-                    isCorrect = actualYear > this.randomYear;
-                    console.log(`BETWEEN-1 (DESPUÉS): ${actualYear} > ${this.randomYear} = ${isCorrect}`);
+                    isCorrect = actualYear >= this.randomYear;
+                    console.log(`BETWEEN-1 (DESPUÉS): ${actualYear} >= ${this.randomYear} = ${isCorrect}`);
                 }
             }
         } else {
@@ -623,18 +776,18 @@ class MusikquizkampenGame {
 
                 if (position === 0) {
                     // Antes del primer año (flecha ←)
-                    isCorrect = actualYear < currentTimeline[0];
-                    console.log(`BETWEEN-0 (ANTES): ${actualYear} < ${currentTimeline[0]} = ${isCorrect}`);
+                    isCorrect = actualYear <= currentTimeline[0];
+                    console.log(`BETWEEN-0 (ANTES): ${actualYear} <= ${currentTimeline[0]} = ${isCorrect}`);
                 } else if (position >= currentTimeline.length) {
                     // Después del último año (flecha →)
-                    isCorrect = actualYear > currentTimeline[currentTimeline.length - 1];
-                    console.log(`BETWEEN-LAST (DESPUÉS): ${actualYear} > ${currentTimeline[currentTimeline.length - 1]} = ${isCorrect}`);
+                    isCorrect = actualYear >= currentTimeline[currentTimeline.length - 1];
+                    console.log(`BETWEEN-LAST (DESPUÉS): ${actualYear} >= ${currentTimeline[currentTimeline.length - 1]} = ${isCorrect}`);
                 } else {
                     // Entre dos años específicos (flecha ↓)
                     const beforeYear = currentTimeline[position - 1];
                     const afterYear = currentTimeline[position];
-                    isCorrect = actualYear > beforeYear && actualYear < afterYear;
-                    console.log(`BETWEEN-SPECIFIC (ENTRE): ${beforeYear} < ${actualYear} < ${afterYear} = ${isCorrect}`);
+                    isCorrect = actualYear >= beforeYear && actualYear <= afterYear;
+                    console.log(`BETWEEN-SPECIFIC (ENTRE): ${beforeYear} <= ${actualYear} <= ${afterYear} = ${isCorrect}`);
                 }
             } else {
                 console.log('ERROR: Dirección no reconocida:', this.selectedDirection);
@@ -706,15 +859,17 @@ class MusikquizkampenGame {
                 }
             }
 
+            const buttonAction = !isCorrect && this.playerCount > 1 ? 'game.handleIncorrectAnswer()' : 'game.nextRound()';
+
             resultContent.innerHTML = `
                 <div class="result-indicator ${resultClass}">${resultText}</div>
-                <iframe src="https://open.spotify.com/embed/track/${this.selectedCard.spotifyId}?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>
+                <iframe src="https://open.spotify.com/embed/track/${this.selectedCard.spotifyId}?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allow="autoplay; clipboard-write; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>
                 <div class="year-display">${actualYear}</div>
                 <div class="song-info">
                     <div class="artist">${this.selectedCard.artist}</div>
                     <div class="song">${this.selectedCard.song}</div>
                 </div>
-                <button class="next-button" onclick="game.nextRound()">Siguiente</button>
+                <button class="next-button" onclick="${buttonAction}">Siguiente</button>
             `;
 
             resultContainer.style.display = 'flex';
@@ -729,6 +884,12 @@ class MusikquizkampenGame {
         // Actualizar puntuación y timeline si es correcto
         if (isCorrect) {
             this.score += 20;
+
+            // Incrementar cartas jugadas en modo multijugador
+            if (this.playerCount > 1 && this.players[this.currentPlayerIndex]) {
+                this.players[this.currentPlayerIndex].cardsPlayed++;
+            }
+
             // Verificar que la carta no esté ya en el timeline
             const cardAlreadyExists = this.guessedCards.find(card => card.id === this.selectedCard.id);
             if (!cardAlreadyExists) {
@@ -806,6 +967,15 @@ class MusikquizkampenGame {
 
         console.log('Cartas restantes después de filtrar:', this.currentRound.length);
 
+        // En modo multijugador, verificar si el jugador actual completó sus 5 cartas
+        if (this.playerCount > 1 && this.players[this.currentPlayerIndex]) {
+            if (this.players[this.currentPlayerIndex].cardsPlayed >= this.maxCardsPerPlayer) {
+                // Este jugador terminó sus 5 cartas, pasar al siguiente
+                this.nextPlayer();
+                return;
+            }
+        }
+
         // Si quedan cartas, continuar jugando
         if (this.currentRound.length > 0) {
             console.log('Continuando con siguiente ronda...');
@@ -817,8 +987,255 @@ class MusikquizkampenGame {
         }
     }
 
+    nextPlayer() {
+        // Guardar el puntaje del jugador actual
+        if (this.players.length > 0) {
+            this.players[this.currentPlayerIndex].score = this.score;
+        }
+
+        // Pasar al siguiente jugador
+        this.currentPlayerIndex++;
+
+        if (this.currentPlayerIndex < this.players.length) {
+            // Mostrar pantalla de listo para el siguiente jugador
+            this.resetPlayerRound();
+            this.showReadyScreen();
+        } else {
+            // Todos los jugadores ya jugaron
+            this.endGame();
+        }
+    }
+
+    handleIncorrectAnswer() {
+        // Cerrar el modal de resultado
+        const resultContainer = document.getElementById('resultContainer');
+        if (resultContainer) {
+            resultContainer.style.display = 'none';
+        }
+
+        // Incrementar cartas jugadas del jugador actual
+        if (this.playerCount > 1 && this.players[this.currentPlayerIndex]) {
+            this.players[this.currentPlayerIndex].cardsPlayed++;
+
+            // Verificar si este jugador ya jugó sus 5 cartas
+            if (this.players[this.currentPlayerIndex].cardsPlayed >= this.maxCardsPerPlayer) {
+                // Este jugador terminó, pasar al siguiente
+                this.nextPlayer();
+            } else {
+                // Aún le quedan cartas, pero al fallar pasa el turno
+                this.passTurn();
+            }
+        } else {
+            // Modo 1 jugador, continúa con la siguiente carta
+            this.nextRound();
+        }
+    }
+
+    passTurn() {
+        // Guardar el estado del jugador actual
+        this.savePlayerState();
+
+        // Buscar el siguiente jugador que aún no haya completado sus 5 cartas
+        let nextIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        let attempts = 0;
+
+        while (attempts < this.players.length) {
+            if (this.players[nextIndex].cardsPlayed < this.maxCardsPerPlayer) {
+                // Encontramos un jugador que aún tiene cartas por jugar
+                this.currentPlayerIndex = nextIndex;
+
+                // Si es la primera vez que juega este jugador, inicializar su estado
+                if (!this.players[this.currentPlayerIndex].currentRound) {
+                    this.resetPlayerRound();
+                    this.savePlayerState();
+                } else {
+                    // Cargar el estado guardado del jugador
+                    this.loadPlayerState();
+                }
+
+                this.showReadyScreen();
+                return;
+            }
+            nextIndex = (nextIndex + 1) % this.players.length;
+            attempts++;
+        }
+
+        // Todos los jugadores terminaron sus cartas
+        this.endGame();
+    }
+
+    savePlayerState() {
+        // Guardar el estado del jugador actual
+        if (this.players[this.currentPlayerIndex]) {
+            this.players[this.currentPlayerIndex].score = this.score;
+            this.players[this.currentPlayerIndex].timeline = [...this.timeline];
+            this.players[this.currentPlayerIndex].guessedCards = JSON.parse(JSON.stringify(this.guessedCards));
+            this.players[this.currentPlayerIndex].currentRound = JSON.parse(JSON.stringify(this.currentRound));
+            this.players[this.currentPlayerIndex].randomYear = this.randomYear;
+
+            console.log('Estado guardado para', this.players[this.currentPlayerIndex].name, {
+                score: this.score,
+                guessedCards: this.guessedCards.length,
+                currentRound: this.currentRound.length,
+                cardsPlayed: this.players[this.currentPlayerIndex].cardsPlayed
+            });
+        }
+    }
+
+    loadPlayerState() {
+        // Cargar el estado del jugador actual
+        const player = this.players[this.currentPlayerIndex];
+        if (player) {
+            this.score = player.score || 0;
+            this.timeline = player.timeline || [];
+            this.guessedCards = player.guessedCards ? JSON.parse(JSON.stringify(player.guessedCards)) : [];
+            this.currentRound = player.currentRound ? JSON.parse(JSON.stringify(player.currentRound)) : [...this.cardDatabase];
+            this.randomYear = player.randomYear || this.getRandomYear();
+
+            console.log('Estado cargado para', player.name, {
+                score: this.score,
+                guessedCards: this.guessedCards.length,
+                currentRound: this.currentRound.length,
+                cardsPlayed: player.cardsPlayed
+            });
+
+            // Actualizar el timeline visual
+            this.displayTimeline();
+        }
+    }
+
+    resetPlayerRound() {
+        // Resetear el juego para el siguiente jugador (primera vez que juega)
+        this.score = this.players[this.currentPlayerIndex]?.score || 0;
+        this.timeline = [];
+        this.guessedCards = [];
+
+        // Asignar cartas únicas para este jugador
+        const playerCards = this.getPlayerCards(this.currentPlayerIndex, this.maxCardsPerPlayer);
+        this.players[this.currentPlayerIndex].assignedCards = playerCards;
+        this.currentRound = [...playerCards];
+
+        this.randomYear = this.getRandomYear();
+        this.selectedCard = null;
+        this.gameState = 'selecting';
+    }
+
+    restartGame() {
+        console.log('🔄 Reiniciando juego');
+
+        // Detener y resetear timer
+        this.stopTimer();
+        this.timeRemaining = 10;
+        this.timerActive = false;
+
+        // Resetear todas las variables del juego
+        this.score = 0;
+        this.timeline = [];
+        this.guessedCards = [];
+        this.randomYear = this.getRandomYear();
+        this.selectedCard = null;
+        this.selectedQRIndex = null;
+        this.selectedDirection = null;
+        this.gameState = 'selecting';
+        this.currentPlayerIndex = 0;
+        this.maxCardsPerPlayer = 5;
+        this.players = [];
+        this.playerCount = 0;
+        this.cardDatabase = [];
+        this.currentRound = [];
+
+        // Limpiar UI
+        const qrCardsGrid = document.getElementById('qrCardsGrid');
+        if (qrCardsGrid) qrCardsGrid.innerHTML = '';
+
+        const timelineContainer = document.querySelector('.timeline-container');
+        if (timelineContainer) {
+            timelineContainer.style.display = 'flex';
+            const timelineYears = document.getElementById('timelineYears');
+            if (timelineYears) timelineYears.innerHTML = '';
+        }
+
+        const selectedCardContainer = document.getElementById('selectedCardContainer');
+        if (selectedCardContainer) selectedCardContainer.style.display = 'none';
+
+        const timerBarContainer = document.getElementById('timerBarContainer');
+        if (timerBarContainer) timerBarContainer.style.display = 'none';
+
+        const resultContainer = document.getElementById('resultContainer');
+        if (resultContainer) resultContainer.style.display = 'none';
+
+        // Resetear score display
+        const scoreElement = document.getElementById('score');
+        if (scoreElement) scoreElement.textContent = '0';
+
+        const currentPlayerName = document.getElementById('currentPlayerName');
+        if (currentPlayerName) currentPlayerName.textContent = '';
+
+        // Mostrar modal de selección de jugadores
+        const playerSelectionModal = document.getElementById('playerSelectionModal');
+        if (playerSelectionModal) {
+            playerSelectionModal.style.display = 'flex';
+        }
+
+        // Generar botones de selección de jugadores
+        this.showPlayerSelection();
+    }
+
+    startTiebreaker() {
+        console.log('🔄 Iniciando desempate');
+
+        // Encontrar jugadores con el puntaje más alto
+        const maxScore = Math.max(...this.players.map(p => p.score));
+        const tiedPlayers = this.players.filter(p => p.score === maxScore);
+
+        console.log('Jugadores empatados:', tiedPlayers.map(p => p.name));
+
+        // Configurar modo desempate: solo 1 carta por jugador
+        this.maxCardsPerPlayer = 1;
+
+        // Resetear cardsPlayed solo para los jugadores empatados
+        this.players.forEach((player, index) => {
+            if (tiedPlayers.includes(player)) {
+                player.cardsPlayed = 0;
+                // Mantener su puntaje actual
+                // Limpiar cartas asignadas anteriormente para el desempate
+                player.assignedCards = [];
+                player.currentRound = [];
+                player.guessedCards = [];
+                player.timeline = [];
+                player.randomYear = this.getRandomYear();
+            } else {
+                // Los que no están empatados ya no juegan más
+                player.cardsPlayed = this.maxCardsPerPlayer;
+            }
+        });
+
+        // Ocultar la pantalla de game over
+        const qrCardsGrid = document.getElementById('qrCardsGrid');
+        if (qrCardsGrid) {
+            qrCardsGrid.innerHTML = '';
+        }
+
+        // Mostrar la timeline container
+        const timelineContainer = document.querySelector('.timeline-container');
+        if (timelineContainer) {
+            timelineContainer.style.display = 'flex';
+        }
+
+        // Empezar con el primer jugador empatado
+        this.currentPlayerIndex = this.players.indexOf(tiedPlayers[0]);
+        this.resetPlayerRound();
+        this.savePlayerState();
+        this.showReadyScreen();
+    }
+
     endGame() {
         console.log('🏁 ENDGAME - Mostrando resumen final');
+
+        // Guardar puntuación del último jugador
+        if (this.players.length > 0 && this.currentPlayerIndex < this.players.length) {
+            this.players[this.currentPlayerIndex].score = this.score;
+        }
 
         // Ocultar todos los elementos del juego
         const selectedCardContainer = document.getElementById('selectedCardContainer');
@@ -834,23 +1251,64 @@ class MusikquizkampenGame {
 
         // Mostrar mensaje final en el área de cartas
         if (qrCardsGrid) {
-            qrCardsGrid.innerHTML = `
-                <div class="game-over">
-                    <h2>¡Juego Terminado!</h2>
-                    <div class="final-score">Puntuación Final: ${this.score} puntos</div>
-                    <div class="cards-guessed">Cartas acertadas: ${this.guessedCards.length} de 5</div>
-                    <div class="timeline-summary">
-                        <h3>Tu Timeline Final:</h3>
-                        <div class="final-timeline">
-                            ${this.guessedCards.sort((a, b) => a.year - b.year).map(card =>
-                                `<div class="timeline-item">${card.year} - ${card.artist} - ${card.song}</div>`
-                            ).join('')}
+            if (this.playerCount > 1) {
+                // Ordenar jugadores por puntaje (de mayor a menor)
+                const sortedPlayers = [...this.players].sort((a, b) => b.score - a.score);
+
+                // Verificar si hay empate en el primer lugar
+                const maxScore = sortedPlayers[0].score;
+                const winners = sortedPlayers.filter(p => p.score === maxScore);
+
+                let winnerText;
+                let buttonHtml;
+
+                if (winners.length > 1) {
+                    const winnerNames = winners.map(w => w.name).join(' y ');
+                    winnerText = `🏆 Empate: ${winnerNames}`;
+                    buttonHtml = `<button class="btn btn-restart" onclick="game.startTiebreaker()">Desempatar</button>`;
+                } else {
+                    winnerText = `🏆 Ganador: ${sortedPlayers[0].name}`;
+                    buttonHtml = `<button class="btn btn-restart" onclick="game.restartGame()">Jugar de Nuevo</button>`;
+                }
+
+                qrCardsGrid.innerHTML = `
+                    <div class="game-over">
+                        <h2>Resultados!</h2>
+                        <div class="final-score">${winnerText}</div>
+                        <div class="timeline-summary">
+                            <div class="final-timeline">
+                                ${sortedPlayers.map((player, index) =>
+                                    `<div class="timeline-item">${index + 1}. ${player.name}: ${player.score} puntos</div>`
+                                ).join('')}
+                            </div>
                         </div>
+                        ${buttonHtml}
                     </div>
-                    <button class="btn btn-share" onclick="game.shareResult()">📤 Compartir Resultado</button>
-                    <button class="btn btn-restart" onclick="location.reload()">Jugar de Nuevo</button>
-                </div>
-            `;
+                `;
+            } else {
+                // Guardar estadísticas en Firebase si está registrado
+                if (!isGuestMode && currentUser && !currentUser.isGuest) {
+                    saveGameStats(this.score);
+                }
+
+                qrCardsGrid.innerHTML = `
+                    <div class="game-over">
+                        <h2>Resultados!</h2>
+                        <div class="final-score">Puntuación Final: ${this.score} puntos</div>
+                        <div class="cards-guessed">Cartas acertadas: ${this.guessedCards.length} de 5</div>
+                        <div class="timeline-summary">
+                            <h3>Tu Timeline Final:</h3>
+                            <div class="final-timeline">
+                                ${this.guessedCards.sort((a, b) => a.year - b.year).map(card =>
+                                    `<div class="timeline-item">${card.year} - ${card.artist} - ${card.song}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        <button class="btn btn-share" onclick="game.shareResult()">📤 Compartir Resultado</button>
+                        <button class="btn btn-restart" onclick="game.restartGame()">Jugar de Nuevo</button>
+                    </div>
+                `;
+            }
         }
 
         console.log('✅ Resumen final mostrado');
@@ -994,10 +1452,27 @@ class MusikquizkampenGame {
 
 // Variable global para acceder al juego
 let game;
+let currentUser = null;
+let isGuestMode = false;
 
 // Inicializar el juego cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
-    game = new MusikquizkampenGame();
+    // Mostrar splash screen y luego mostrar login
+    const splashScreen = document.getElementById('splashScreen');
+    const loginModal = document.getElementById('loginModal');
+
+    setTimeout(() => {
+        if (splashScreen) {
+            splashScreen.style.display = 'none';
+        }
+        // Mostrar modal de login
+        if (loginModal) {
+            loginModal.style.display = 'flex';
+        }
+
+        // Configurar Firebase Auth
+        setupFirebaseAuth();
+    }, 2000);
 
     // Configurar modal de changelog
     const versionIndicator = document.getElementById('versionIndicator');
@@ -1040,11 +1515,157 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Configurar modal de profile
+    const menuProfile = document.getElementById('menuProfile');
+    const profileModal = document.getElementById('profileModal');
+    const closeProfileModal = document.getElementById('closeProfileModal');
+    const profileGuest = document.getElementById('profileGuest');
+    const profileUser = document.getElementById('profileUser');
+    const btnProfileLogin = document.getElementById('btnProfileLogin');
+    const btnProfileLogout = document.getElementById('btnProfileLogout');
+    const profileUserName = document.getElementById('profileUserName');
+    const profileUserEmail = document.getElementById('profileUserEmail');
+    const userAvatarImg = document.getElementById('userAvatarImg');
+
+    if (menuProfile && profileModal) {
+        menuProfile.addEventListener('click', async () => {
+            // Mostrar perfil según el tipo de usuario
+            if (isGuestMode) {
+                profileGuest.style.display = 'flex';
+                profileUser.style.display = 'none';
+            } else if (currentUser && !currentUser.isGuest) {
+                profileGuest.style.display = 'none';
+                profileUser.style.display = 'flex';
+
+                // Actualizar datos del usuario
+                if (profileUserName) profileUserName.textContent = currentUser.displayName || 'Usuario';
+                if (profileUserEmail) profileUserEmail.textContent = currentUser.email || '';
+                if (userAvatarImg && currentUser.photoURL) userAvatarImg.src = currentUser.photoURL;
+
+                // Cargar y mostrar estadísticas
+                const stats = await loadUserStats();
+                if (stats) {
+                    const totalGames = document.getElementById('totalGames');
+                    const totalPoints = document.getElementById('totalPoints');
+                    const avgPoints = document.getElementById('avgPoints');
+
+                    if (totalGames) totalGames.textContent = stats.totalGames;
+                    if (totalPoints) totalPoints.textContent = stats.totalPoints;
+                    if (avgPoints) avgPoints.textContent = stats.avgPoints;
+                }
+            }
+
+            profileModal.style.display = 'flex';
+            menuDropdown.style.display = 'none';
+            hamburgerMenu.textContent = '☰';
+        });
+    }
+
+    if (closeProfileModal && profileModal) {
+        closeProfileModal.addEventListener('click', () => {
+            profileModal.style.display = 'none';
+            game.resumeTimer();
+        });
+
+        // Cerrar al hacer click fuera del contenido
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                profileModal.style.display = 'none';
+                game.resumeTimer();
+            }
+        });
+    }
+
+    if (btnProfileLogin) {
+        btnProfileLogin.addEventListener('click', async () => {
+            try {
+                const result = await window.firebaseSignInWithPopup(window.firebaseAuth, window.googleProvider);
+                console.log('Login exitoso desde profile:', result.user.displayName);
+
+                // Actualizar estado
+                isGuestMode = false;
+                currentUser = result.user;
+
+                // Cerrar modal de profile
+                profileModal.style.display = 'none';
+
+                // Recargar para aplicar cambios completos
+                location.reload();
+            } catch (error) {
+                console.error('Error en login:', error);
+                alert('Error al iniciar sesión: ' + error.message);
+            }
+        });
+    }
+
+    if (btnProfileLogout) {
+        btnProfileLogout.addEventListener('click', async () => {
+            try {
+                await window.firebaseSignOut(window.firebaseAuth);
+                console.log('Logout exitoso desde profile');
+                location.reload();
+            } catch (error) {
+                console.error('Error en logout:', error);
+            }
+        });
+    }
+
+    // Configurar modal de config
+    const menuConfig = document.getElementById('menuConfig');
+    const configModal = document.getElementById('configModal');
+    const closeConfigModal = document.getElementById('closeConfigModal');
+    const configTheme = document.getElementById('configTheme');
+    const configHacks = document.getElementById('configHacks');
+    const themeText = document.getElementById('themeText');
+    const hacksStatus = document.getElementById('hacksStatus');
+
+    if (menuConfig && configModal) {
+        menuConfig.addEventListener('click', () => {
+            configModal.style.display = 'flex';
+            menuDropdown.style.display = 'none';
+            hamburgerMenu.textContent = '☰';
+        });
+    }
+
+    if (closeConfigModal && configModal) {
+        closeConfigModal.addEventListener('click', () => {
+            configModal.style.display = 'none';
+            game.resumeTimer();
+        });
+
+        // Cerrar al hacer click fuera del contenido
+        configModal.addEventListener('click', (e) => {
+            if (e.target === configModal) {
+                configModal.style.display = 'none';
+                game.resumeTimer();
+            }
+        });
+    }
+
+    if (configTheme) {
+        configTheme.addEventListener('click', () => {
+            const isLightTheme = document.body.classList.contains('light-theme');
+
+            if (isLightTheme) {
+                document.body.classList.remove('light-theme');
+                themeText.textContent = 'Theme Clear';
+            } else {
+                document.body.classList.add('light-theme');
+                themeText.textContent = 'Theme Dark';
+            }
+        });
+    }
+
+    if (configHacks) {
+        configHacks.addEventListener('click', () => {
+            toggleDebugMode();
+            hacksStatus.textContent = debugEnabled ? 'ON' : 'OFF';
+        });
+    }
+
     // Configurar menú hamburguesa
     const hamburgerMenu = document.getElementById('hamburgerMenu');
     const menuDropdown = document.getElementById('menuDropdown');
-    const menuHacks = document.getElementById('menuHacks');
-    const menuChangelog = document.getElementById('menuChangelog');
 
     if (hamburgerMenu && menuDropdown) {
         hamburgerMenu.addEventListener('click', (e) => {
@@ -1078,16 +1699,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (menuHacks) {
-        menuHacks.addEventListener('click', () => {
-            toggleDebugMode();
-            menuDropdown.style.display = 'none';
-            hamburgerMenu.textContent = '☰';
-
-            // Reanudar timer al cerrar menú
-            game.resumeTimer();
-        });
-    }
 
     // Cerrar menú al hacer clic fuera del contenido
     if (menuDropdown) {
@@ -1148,4 +1759,191 @@ function toggleDebugMode() {
             existingStyle.remove();
         }
     }
+}
+
+// Configurar Firebase Authentication
+function setupFirebaseAuth() {
+    const btnGoogleLogin = document.getElementById('btnGoogleLogin');
+    const btnGuestLogin = document.getElementById('btnGuestLogin');
+    const btnLogout = document.getElementById('btnLogout');
+    const loginModal = document.getElementById('loginModal');
+    const loginUserInfo = document.getElementById('loginUserInfo');
+    const userName = document.getElementById('userName');
+
+    // Listener para cambios en el estado de autenticación
+    window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
+        if (user) {
+            // Usuario logueado
+            currentUser = user;
+            isGuestMode = false;
+            console.log('Usuario logueado:', user.displayName);
+
+            // Ocultar botones de login y mostrar info de usuario
+            if (btnGoogleLogin) btnGoogleLogin.style.display = 'none';
+            if (btnGuestLogin) btnGuestLogin.style.display = 'none';
+            if (loginUserInfo) loginUserInfo.style.display = 'block';
+            if (userName) userName.textContent = user.displayName;
+
+            // Crear/actualizar usuario en Firestore
+            createOrUpdateUser(user);
+
+            // Esperar 1 segundo y luego cerrar modal de login e iniciar juego
+            setTimeout(() => {
+                if (loginModal) loginModal.style.display = 'none';
+                if (!game) {
+                    game = new MusikquizkampenGame();
+                }
+            }, 1000);
+        } else {
+            // Usuario no logueado
+            currentUser = null;
+            console.log('Usuario no logueado');
+
+            // Mostrar botones de login y ocultar info de usuario
+            if (btnGoogleLogin) btnGoogleLogin.style.display = 'flex';
+            if (btnGuestLogin) btnGuestLogin.style.display = 'block';
+            if (loginUserInfo) loginUserInfo.style.display = 'none';
+        }
+    });
+
+    // Botón de login con Google
+    if (btnGoogleLogin) {
+        btnGoogleLogin.addEventListener('click', async () => {
+            try {
+                const result = await window.firebaseSignInWithPopup(window.firebaseAuth, window.googleProvider);
+                console.log('Login exitoso:', result.user.displayName);
+            } catch (error) {
+                console.error('Error en login:', error);
+                alert('Error al iniciar sesión: ' + error.message);
+            }
+        });
+    }
+
+    // Botón de login como invitado
+    if (btnGuestLogin) {
+        btnGuestLogin.addEventListener('click', () => {
+            isGuestMode = true;
+            currentUser = { displayName: 'Invitado', isGuest: true };
+            console.log('Jugando como invitado');
+
+            // Cerrar modal de login e iniciar juego
+            if (loginModal) loginModal.style.display = 'none';
+            if (!game) {
+                game = new MusikquizkampenGame();
+            }
+        });
+    }
+
+    // Botón de logout
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await window.firebaseSignOut(window.firebaseAuth);
+                console.log('Logout exitoso');
+                // Recargar la página para volver al login
+                location.reload();
+            } catch (error) {
+                console.error('Error en logout:', error);
+            }
+        });
+    }
+}
+
+// Funciones de Firestore para manejo de usuarios y estadísticas
+async function createOrUpdateUser(user) {
+    if (!user || !window.firebaseDb) {
+        console.log('⚠️ No se puede crear usuario:', { user: !!user, db: !!window.firebaseDb });
+        return;
+    }
+
+    console.log('🔵 Intentando crear/actualizar usuario:', user.displayName);
+
+    try {
+        const userRef = window.firestoreDoc(window.firebaseDb, 'users', user.uid);
+        const userSnap = await window.firestoreGetDoc(userRef);
+
+        if (!userSnap.exists()) {
+            // Usuario nuevo - crear documento
+            console.log('📝 Creando nuevo usuario en Firestore...');
+            await window.firestoreSetDoc(userRef, {
+                uid: user.uid,
+                displayName: user.displayName,
+                email: user.email,
+                photoURL: user.photoURL,
+                createdAt: new Date().toISOString(),
+                totalGames: 0,
+                totalPoints: 0,
+                lastPlayed: null
+            });
+            console.log('✅ Usuario creado en Firestore');
+        } else {
+            // Usuario existente - actualizar info básica si cambió
+            console.log('📝 Actualizando usuario existente en Firestore...');
+            await window.firestoreUpdateDoc(userRef, {
+                displayName: user.displayName,
+                email: user.email,
+                photoURL: user.photoURL
+            });
+            console.log('✅ Usuario actualizado en Firestore');
+        }
+    } catch (error) {
+        console.error('❌ Error al crear/actualizar usuario:', error);
+        console.error('Error completo:', error.message, error.code);
+    }
+}
+
+async function saveGameStats(points) {
+    console.log('🎮 saveGameStats llamado:', {
+        points,
+        currentUser: !!currentUser,
+        isGuestMode,
+        db: !!window.firebaseDb
+    });
+
+    if (!currentUser || isGuestMode || !window.firebaseDb) {
+        console.log('⚠️ No se guardan stats:', {
+            hasUser: !!currentUser,
+            isGuest: isGuestMode,
+            hasDb: !!window.firebaseDb
+        });
+        return;
+    }
+
+    try {
+        console.log('📊 Guardando estadísticas para usuario:', currentUser.displayName);
+        const userRef = window.firestoreDoc(window.firebaseDb, 'users', currentUser.uid);
+
+        await window.firestoreUpdateDoc(userRef, {
+            totalGames: window.firestoreIncrement(1),
+            totalPoints: window.firestoreIncrement(points),
+            lastPlayed: new Date().toISOString()
+        });
+
+        console.log('✅ Estadísticas guardadas:', { points, timestamp: new Date() });
+    } catch (error) {
+        console.error('❌ Error al guardar estadísticas:', error);
+        console.error('Error completo:', error.message, error.code);
+    }
+}
+
+async function loadUserStats() {
+    if (!currentUser || isGuestMode || !window.firebaseDb) return null;
+
+    try {
+        const userRef = window.firestoreDoc(window.firebaseDb, 'users', currentUser.uid);
+        const userSnap = await window.firestoreGetDoc(userRef);
+
+        if (userSnap.exists()) {
+            const data = userSnap.data();
+            return {
+                totalGames: data.totalGames || 0,
+                totalPoints: data.totalPoints || 0,
+                avgPoints: data.totalGames > 0 ? Math.round(data.totalPoints / data.totalGames) : 0
+            };
+        }
+    } catch (error) {
+        console.error('❌ Error al cargar estadísticas:', error);
+    }
+
+    return null;
 }

@@ -7,15 +7,80 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content">
+            <div class="splash-logo">🎵</div>
+            <h1 class="splash-title">Juego de Musica</h1>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal" style="display: none;">
+        <div class="login-content">
+            <div class="login-logo">🎵</div>
+            <h2>Bienvenido a Juego de Musica</h2>
+            <p>Inicia sesión para comenzar a jugar</p>
+            <button class="btn-google-login" id="btnGoogleLogin">
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                    <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                </svg>
+                Continuar con Google
+            </button>
+            <button class="btn-guest-login" id="btnGuestLogin">
+                Jugar como invitado
+            </button>
+            <div class="login-user-info" id="loginUserInfo" style="display: none;">
+                <p>Conectado como: <span id="userName"></span></p>
+                <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+            </div>
+        </div>
+    </div>
+
     <div class="game-container">
+        <!-- Modal de selección de jugadores -->
+        <div class="player-selection-modal" id="playerSelectionModal">
+            <div class="player-selection-content">
+                <h2>¿Cuántos jugadores?</h2>
+                <div class="player-buttons" id="playerButtons">
+                    <!-- Botones 1-10 se generarán aquí -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de nombres de jugadores -->
+        <div class="player-names-modal" id="playerNamesModal" style="display: none;">
+            <div class="player-names-content">
+                <h2>Ingresa los nombres</h2>
+                <div class="player-names-inputs" id="playerNamesInputs">
+                    <!-- Inputs de nombres se generarán aquí -->
+                </div>
+                <button class="btn-start-game" id="btnStartGame">Comenzar</button>
+            </div>
+        </div>
+
+        <!-- Modal de listo para jugar -->
+        <div class="ready-modal" id="readyModal" style="display: none;">
+            <div class="ready-content">
+                <h2 id="readyPlayerName">¿Listo para jugar?</h2>
+                <button class="btn-play" id="btnPlay">▶ PLAY</button>
+            </div>
+        </div>
+
         <!-- Barra de tiempo -->
         <div class="timer-bar-container" id="timerBarContainer" style="display: none;">
             <div class="timer-bar" id="timerBar"></div>
         </div>
 
         <header class="game-header">
-            <h1>Musikquizkampen</h1>
-            <div class="score">Puntos: <span id="score">0</span></div>
+            <h1>Juego Musica</h1>
+            <div class="score">
+                <span id="currentPlayerName"></span>
+                Puntos: <span id="score">0</span>
+            </div>
         </header>
 
         <main class="game-board">
@@ -82,11 +147,94 @@
     <!-- Menú desplegable -->
     <div class="menu-dropdown" id="menuDropdown" style="display: none;">
         <div class="menu-content">
-            <div class="menu-item" id="menuHacks">
-                <span>🔧 Hacks</span>
+            <div class="menu-item" id="menuProfile">
+                <span>👤 Profile</span>
+            </div>
+            <div class="menu-item" id="menuConfig">
+                <span>⚙️ Config</span>
             </div>
             <!-- Versión -->
-            <div class="version-indicator" id="versionIndicator">v0.6</div>
+            <div class="version-indicator" id="versionIndicator">v0.7</div>
+        </div>
+    </div>
+
+    <!-- Modal de Profile -->
+    <div class="profile-modal" id="profileModal" style="display: none;">
+        <div class="profile-content">
+            <div class="profile-header">
+                <h2>👤 Mi Perfil</h2>
+                <button class="close-profile-modal" id="closeProfileModal">&times;</button>
+            </div>
+            <div class="profile-body">
+                <!-- Perfil para invitado -->
+                <div class="profile-guest" id="profileGuest" style="display: none;">
+                    <div class="guest-avatar">👤</div>
+                    <h3>Entraste como Guest</h3>
+                    <p class="guest-message">Para personalizar tu perfil tenés que registrarte</p>
+                    <button class="btn-profile-login" id="btnProfileLogin">
+                        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Registrarse con Google
+                    </button>
+                </div>
+
+                <!-- Perfil para usuario registrado -->
+                <div class="profile-user" id="profileUser" style="display: none;">
+                    <div class="user-avatar" id="userAvatar">
+                        <img id="userAvatarImg" src="" alt="Avatar">
+                    </div>
+                    <h3 id="profileUserName">Nombre Usuario</h3>
+                    <p class="user-email" id="profileUserEmail">email@example.com</p>
+
+                    <!-- Estadísticas del usuario -->
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalGames">0</span>
+                            <span class="stat-label">Partidas</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalPoints">0</span>
+                            <span class="stat-label">Puntos</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="avgPoints">0</span>
+                            <span class="stat-label">Promedio</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-profile-logout" id="btnProfileLogout">Cerrar sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Config -->
+    <div class="config-modal" id="configModal" style="display: none;">
+        <div class="config-content">
+            <div class="config-header">
+                <h2>⚙️ Configuración</h2>
+                <button class="close-config-modal" id="closeConfigModal">&times;</button>
+            </div>
+            <div class="config-body">
+                <div class="config-section">
+                    <h3>Apariencia</h3>
+                    <div class="config-option" id="configTheme">
+                        <span class="config-label">Tema:</span>
+                        <span class="config-value" id="themeText">Theme Clear</span>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <h3>Desarrollo</h3>
+                    <div class="config-option" id="configHacks">
+                        <span class="config-label">🔧 Hacks</span>
+                        <span class="config-value" id="hacksStatus">OFF</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -98,6 +246,19 @@
                 <button class="close-modal" id="closeModal">&times;</button>
             </div>
             <div class="changelog-body">
+                <h3>v0.7 - Mejoras Visuales, Multijugador y Login</h3>
+                <ul>
+                    <li>Splash screen de bienvenida con logo y título (2 segundos)</li>
+                    <li>Login con Google usando Firebase Authentication</li>
+                    <li>Sistema de autenticación: los usuarios deben iniciar sesión para jugar</li>
+                    <li>Header con color sólido en vez de degradado</li>
+                    <li>Título cambiado a "Juego Musica"</li>
+                    <li>Modal de resultados con colores adaptados al tema (dark/light)</li>
+                    <li>Máximo de jugadores reducido de 10 a 6</li>
+                    <li>Sistema de desempate acumulativo: los puntos se suman en cada ronda de desempate</li>
+                    <li>Múltiples rondas de desempate hasta que haya un ganador</li>
+                </ul>
+
                 <h3>v0.6 - Menú Hamburguesa y Mejoras UX</h3>
                 <ul>
                     <li>Menú hamburguesa con panel lateral deslizable desde la derecha</li>
@@ -173,6 +334,46 @@
             </div>
         </div>
     </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBA5rbgNU4xHqJHHZ_C0gsKEomC9zlM17s",
+            authDomain: "musica-9eeef.firebaseapp.com",
+            projectId: "musica-9eeef",
+            storageBucket: "musica-9eeef.firebasestorage.app",
+            messagingSenderId: "1074189665143",
+            appId: "1:1074189665143:web:560e5b4c5b436d7762d772",
+            measurementId: "G-WL8WQT0J84"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // Exponer auth y firestore globalmente para que script.js pueda acceder
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.googleProvider = provider;
+        window.firebaseSignInWithPopup = signInWithPopup;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        window.firebaseSignOut = signOut;
+        window.firestoreDoc = doc;
+        window.firestoreSetDoc = setDoc;
+        window.firestoreGetDoc = getDoc;
+        window.firestoreUpdateDoc = updateDoc;
+        window.firestoreIncrement = increment;
+    </script>
 
     <script src="script.js"></script>
 </body>
