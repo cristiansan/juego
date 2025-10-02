@@ -1989,7 +1989,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 qrVideo.play();
 
                 // Iniciar escaneo
-                const canvasContext = qrCanvas.getContext('2d');
+                const canvasContext = qrCanvas.getContext('2d', { willReadFrequently: true });
 
                 qrScanInterval = setInterval(() => {
                     if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
@@ -2059,16 +2059,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cargar datos de Spotify
     if (loadSongBtn) {
         loadSongBtn.addEventListener('click', async () => {
-            const link = spotifyLinkInput.value.trim();
+            let link = spotifyLinkInput.value.trim();
 
             if (!link) {
                 alert('Por favor ingresa un link de Spotify');
-                return;
-            }
-
-            // Validar que sea un link de Spotify
-            if (!link.includes('open.spotify.com/track/')) {
-                alert('Por favor ingresa un link válido de Spotify');
                 return;
             }
 
@@ -2076,28 +2070,160 @@ document.addEventListener('DOMContentLoaded', () => {
             loadSongBtn.textContent = '⏳ Cargando...';
 
             try {
-                const response = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link)}`);
-                const data = await response.json();
+                let finalLink = link;
+                let songName = 'Desconocido';
+                let artistName = 'Desconocido';
+                let year = new Date().getFullYear();
+                let album = 'Desconocido';
+                let trackId = null;
 
-                // Extraer información
-                const title = data.title || 'Desconocido';
-                const [songName, artistName] = title.split(' · ') || [title, 'Desconocido'];
+                // Intentar usar la API pública de oEmbed de Spotify
+                try {
+                    // Si el link no es directo de Spotify, primero abrirlo en una nueva ventana
+                    if (!link.includes('open.spotify.com/track/')) {
+                        // Mostrar mensaje al usuario
+                        songData.innerHTML = `
+                            <div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin: 20px 0;">
+                                <p style="margin: 0 0 15px 0; color: #856404;"><strong>⚠️ Link corto detectado</strong></p>
+                                <p style="margin: 0 0 15px 0; color: #856404;">
+                                    Este es un link de redirección. Sigue estos pasos:
+                                </p>
+                                <ol style="margin: 0 0 15px 0; padding-left: 20px; color: #856404;">
+                                    <li>Haz clic en "Abrir Spotify" abajo</li>
+                                    <li>Spotify se abrirá en una nueva pestaña</li>
+                                    <li>Copia la URL completa de Spotify de la barra de direcciones</li>
+                                    <li>Vuelve aquí y pega esa URL en el campo de arriba</li>
+                                    <li>Presiona "Cargar" nuevamente</li>
+                                </ol>
+                                <a href="${link}" target="_blank" style="display: inline-block; padding: 12px 24px; background: #1DB954; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                                    🎵 Abrir Spotify
+                                </a>
+                            </div>
+                        `;
+                        songPreview.style.display = 'block';
+                        return;
+                    }
+
+                    // Extraer track ID
+                    trackId = extractTrackId(link);
+                    if (trackId) {
+                        finalLink = `https://open.spotify.com/track/${trackId}`;
+
+                        // Usar oEmbed API
+                        const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(finalLink)}`;
+                        const oembedResponse = await fetch(oembedUrl);
+
+                        if (oembedResponse.ok) {
+                            const oembedData = await oembedResponse.json();
+                            const title = oembedData.title || '';
+
+                            // Extraer nombre y artista del título
+                            // Formato: "Song Name" o "Song · Artist"
+                            if (title.includes(' · ')) {
+                                const parts = title.split(' · ');
+                                songName = parts[0].trim();
+                                artistName = parts[1].trim();
+                            } else {
+                                songName = title.trim();
+                            }
+                        }
+                    }
+
+                } catch (error) {
+                    console.log('Error al obtener datos de oEmbed:', error);
+                }
 
                 currentSongPreview = {
                     name: songName,
                     artist: artistName,
-                    spotifyUrl: link,
-                    year: new Date().getFullYear() // Por ahora usamos año actual, luego lo mejoramos
+                    spotifyUrl: finalLink,
+                    year: year,
+                    album: album
                 };
 
-                // Mostrar preview
+                // Mostrar preview con formulario editable
+                let previewHtml = '';
+                if (trackId) {
+                    previewHtml = `
+                        <div style="margin: 20px 0;">
+                            <iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${trackId}?utm_source=generator" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                        </div>
+                    `;
+                }
+
                 songData.innerHTML = `
-                    <p><strong>🎵 Canción:</strong> ${currentSongPreview.name}</p>
-                    <p><strong>👤 Artista:</strong> ${currentSongPreview.artist}</p>
-                    <p><strong>📅 Año:</strong> ${currentSongPreview.year}</p>
-                    <p><strong>🔗 Link:</strong> <a href="${currentSongPreview.spotifyUrl}" target="_blank">Ver en Spotify</a></p>
+                    ${previewHtml}
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <p style="margin: 0 0 10px 0;"><strong>Verifica y completa los datos:</strong></p>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">🎵 Canción:</label>
+                                <input type="text" id="editSongName" value="${currentSongPreview.name}" style="width: 100%; padding: 8px; border: 2px solid var(--border); border-radius: 5px; background: white; color: black; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">👤 Artista:</label>
+                                <input type="text" id="editArtist" value="${currentSongPreview.artist}" style="width: 100%; padding: 8px; border: 2px solid var(--border); border-radius: 5px; background: white; color: black; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">💿 Álbum:</label>
+                                <input type="text" id="editAlbum" value="${currentSongPreview.album}" style="width: 100%; padding: 8px; border: 2px solid var(--border); border-radius: 5px; background: white; color: black; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">📅 Año:</label>
+                                <input type="number" id="editYear" value="${currentSongPreview.year}" min="1900" max="2099" style="width: 100%; padding: 8px; border: 2px solid var(--border); border-radius: 5px; background: white; color: black; box-sizing: border-box;">
+                            </div>
+                        </div>
+                        <button id="confirmEditedData" style="margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">
+                            ✅ Confirmar datos
+                        </button>
+                    </div>
                 `;
                 songPreview.style.display = 'block';
+
+                // Manejar confirmación de datos editados
+                setTimeout(() => {
+                    const confirmBtn = document.getElementById('confirmEditedData');
+                    if (confirmBtn) {
+                        confirmBtn.addEventListener('click', () => {
+                            const editedSongName = document.getElementById('editSongName').value.trim();
+                            const editedArtist = document.getElementById('editArtist').value.trim();
+                            const editedAlbum = document.getElementById('editAlbum').value.trim();
+                            const editedYear = document.getElementById('editYear').value.trim();
+
+                            if (!editedSongName || !editedArtist || !editedYear) {
+                                alert('Por favor completa: Canción, Artista y Año');
+                                return;
+                            }
+
+                            currentSongPreview = {
+                                name: editedSongName,
+                                artist: editedArtist,
+                                spotifyUrl: finalLink,
+                                year: parseInt(editedYear),
+                                album: editedAlbum
+                            };
+
+                            // Mostrar preview final
+                            songData.innerHTML = `
+                                ${previewHtml}
+                                <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px 0; border: 2px solid #28a745;">
+                                    <p style="margin: 0 0 10px 0; color: #155724;"><strong>✅ Datos confirmados:</strong></p>
+                                    <p style="margin: 5px 0; color: #155724;"><strong>🎵 Canción:</strong> ${currentSongPreview.name}</p>
+                                    <p style="margin: 5px 0; color: #155724;"><strong>👤 Artista:</strong> ${currentSongPreview.artist}</p>
+                                    <p style="margin: 5px 0; color: #155724;"><strong>💿 Álbum:</strong> ${currentSongPreview.album}</p>
+                                    <p style="margin: 5px 0; color: #155724;"><strong>📅 Año:</strong> ${currentSongPreview.year}</p>
+                                    <p style="margin: 5px 0; color: #155724;"><strong>🔗 Link:</strong> <a href="${currentSongPreview.spotifyUrl}" target="_blank" style="color: #155724;">Ver en Spotify</a></p>
+                                </div>
+                            `;
+
+                            // Actualizar texto del botón agregar
+                            if (addToListBtn && currentListName) {
+                                addToListBtn.textContent = `✅ Guardar en lista: ${currentListName}`;
+                            }
+                        });
+                    }
+                }, 100);
+
             } catch (error) {
                 console.error('Error al cargar canción:', error);
                 alert('Error al cargar la canción. Verifica el link.');
@@ -2106,6 +2232,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadSongBtn.textContent = '🔍 Cargar';
             }
         });
+    }
+
+    // Función para extraer el track ID de cualquier link de Spotify
+    function extractTrackId(url) {
+        // Primero intentar extraer directamente del link
+        const directMatch = url.match(/track\/([a-zA-Z0-9]+)/);
+        if (directMatch) {
+            return directMatch[1];
+        }
+
+        // Si no se encuentra, devolver null (se pedirá al usuario abrir el link)
+        return null;
     }
 
     // Agregar canción a la lista
@@ -2125,6 +2263,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentListName = listName;
                 listNameInput.disabled = true;
                 listNameError.style.display = 'none';
+
+                // Actualizar texto del botón
+                addToListBtn.textContent = `✅ Guardar en lista: ${currentListName}`;
             }
 
             if (!currentSongPreview) {
