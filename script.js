@@ -1620,6 +1620,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeText = document.getElementById('themeText');
     const hacksStatus = document.getElementById('hacksStatus');
     const configHacksSection = document.getElementById('configHacksSection');
+    const playlistSelector = document.getElementById('playlistSelector');
+    const playlistInfo = document.getElementById('playlistInfo');
+    const playlistSongCount = document.getElementById('playlistSongCount');
+
+    let selectedPlaylist = 'default';
+    let customPlaylists = [];
+
+    // Función para cargar listas personalizadas
+    async function loadCustomPlaylists() {
+        if (!window.firebaseDb || !currentUser || currentUser.isGuest) {
+            console.log('⚠️ No se puede cargar listas: firebaseDb o currentUser no disponible');
+            return;
+        }
+
+        console.log('🔍 Intentando cargar listas para usuario:', currentUser.uid);
+
+        try {
+            const { collection, query, where } = window.firestoreQuery;
+            const listsRef = collection(window.firebaseDb, 'customLists');
+            const q = query(
+                listsRef,
+                where('userId', '==', currentUser.uid)
+            );
+            console.log('📤 Ejecutando query a Firestore...');
+            const querySnapshot = await window.firestoreGetDocs(q);
+
+            customPlaylists = [];
+            querySnapshot.forEach((doc) => {
+                customPlaylists.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            // Ordenar por fecha de creación (más recientes primero)
+            customPlaylists.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            // Actualizar selector
+            if (playlistSelector) {
+                // Limpiar opciones excepto default
+                playlistSelector.innerHTML = '<option value="default">Default (8)</option>';
+
+                // Agregar listas personalizadas
+                customPlaylists.forEach(playlist => {
+                    const option = document.createElement('option');
+                    option.value = playlist.id;
+                    option.textContent = `${playlist.name} (${playlist.songCount})`;
+                    playlistSelector.appendChild(option);
+                });
+            }
+
+            console.log('📋 Listas personalizadas cargadas:', customPlaylists.length);
+            console.log('📋 Detalles de las listas:', customPlaylists);
+
+        } catch (error) {
+            console.error('Error al cargar listas personalizadas:', error);
+        }
+    }
 
     if (menuConfig && configModal) {
         menuConfig.addEventListener('click', async () => {
@@ -1637,7 +1695,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (configHacksSection) {
                             configHacksSection.style.display = userData.admin === true ? 'block' : 'none';
                         }
+
+                        // Cargar lista seleccionada si existe
+                        if (userData.selectedPlaylist) {
+                            selectedPlaylist = userData.selectedPlaylist;
+                            if (playlistSelector) {
+                                playlistSelector.value = selectedPlaylist;
+                            }
+                        }
                     }
+
+                    // Cargar listas personalizadas
+                    await loadCustomPlaylists();
+
                 } catch (error) {
                     console.error('Error al verificar admin:', error);
                     if (configHacksSection) {
@@ -1690,6 +1760,37 @@ document.addEventListener('DOMContentLoaded', () => {
         configHacks.addEventListener('click', () => {
             toggleDebugMode();
             hacksStatus.textContent = debugEnabled ? 'ON' : 'OFF';
+        });
+    }
+
+    // Manejar cambio de lista
+    if (playlistSelector) {
+        playlistSelector.addEventListener('change', async (e) => {
+            selectedPlaylist = e.target.value;
+
+            // Mostrar info de la lista
+            if (selectedPlaylist === 'default') {
+                playlistInfo.style.display = 'none';
+            } else {
+                const playlist = customPlaylists.find(p => p.id === selectedPlaylist);
+                if (playlist) {
+                    playlistSongCount.textContent = playlist.songCount;
+                    playlistInfo.style.display = 'block';
+                }
+            }
+
+            // Guardar preferencia en Firestore
+            if (!isGuestMode && currentUser && !currentUser.isGuest && window.firebaseDb) {
+                try {
+                    const userRef = window.firestoreDoc(window.firebaseDb, 'users', currentUser.uid);
+                    await window.firestoreUpdateDoc(userRef, {
+                        selectedPlaylist: selectedPlaylist
+                    });
+                    console.log('✅ Lista seleccionada guardada:', selectedPlaylist);
+                } catch (error) {
+                    console.error('Error al guardar selección de lista:', error);
+                }
+            }
         });
     }
 
@@ -1954,13 +2055,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Verificar si existe en Firestore
         if (window.firebaseDb && currentUser && !currentUser.isGuest) {
             try {
-                const listsRef = window.firestoreCollection(window.firebaseDb, 'customLists');
-                const q = window.firestoreQuery.query(
+                const { collection, query, where, getDocs } = window.firestoreQuery;
+                const listsRef = collection(window.firebaseDb, 'customLists');
+                const q = query(
                     listsRef,
-                    window.firestoreQuery.where('userId', '==', currentUser.uid),
-                    window.firestoreQuery.where('name', '==', name.trim())
+                    where('userId', '==', currentUser.uid),
+                    where('name', '==', name.trim())
                 );
-                const querySnapshot = await window.firestoreGetDocs(q);
+                const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
                     return { valid: false, error: 'Ya existe una lista con este nombre' };
@@ -2079,29 +2181,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Intentar usar la API pública de oEmbed de Spotify
                 try {
-                    // Si el link no es directo de Spotify, primero abrirlo en una nueva ventana
+                    // Si el link no es directo de Spotify, intentar con un servicio de unshorten
                     if (!link.includes('open.spotify.com/track/')) {
-                        // Mostrar mensaje al usuario
-                        songData.innerHTML = `
-                            <div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin: 20px 0;">
-                                <p style="margin: 0 0 15px 0; color: #856404;"><strong>⚠️ Link corto detectado</strong></p>
-                                <p style="margin: 0 0 15px 0; color: #856404;">
-                                    Este es un link de redirección. Sigue estos pasos:
-                                </p>
-                                <ol style="margin: 0 0 15px 0; padding-left: 20px; color: #856404;">
-                                    <li>Haz clic en "Abrir Spotify" abajo</li>
-                                    <li>Spotify se abrirá en una nueva pestaña</li>
-                                    <li>Copia la URL completa de Spotify de la barra de direcciones</li>
-                                    <li>Vuelve aquí y pega esa URL en el campo de arriba</li>
-                                    <li>Presiona "Cargar" nuevamente</li>
-                                </ol>
-                                <a href="${link}" target="_blank" style="display: inline-block; padding: 12px 24px; background: #1DB954; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
-                                    🎵 Abrir Spotify
-                                </a>
-                            </div>
-                        `;
-                        songPreview.style.display = 'block';
-                        return;
+                        // Intentar usar un servicio público para seguir redirects
+                        try {
+                            // Usar unshorten.me API (gratuito y sin CORS)
+                            const unshortenResponse = await fetch(`https://unshorten.me/json/${encodeURIComponent(link)}`);
+                            const unshortenData = await unshortenResponse.json();
+
+                            if (unshortenData.resolved_url && unshortenData.resolved_url.includes('spotify.com/track/')) {
+                                link = unshortenData.resolved_url;
+                                finalLink = link;
+                                console.log('Link expandido:', finalLink);
+                            } else {
+                                throw new Error('No se pudo expandir el link');
+                            }
+                        } catch (unshortenError) {
+                            console.log('Error al expandir link:', unshortenError);
+                            // Mostrar mensaje al usuario
+                            songData.innerHTML = `
+                                <div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin: 20px 0;">
+                                    <p style="margin: 0 0 15px 0; color: #856404;"><strong>⚠️ Link corto detectado</strong></p>
+                                    <p style="margin: 0 0 15px 0; color: #856404;">
+                                        Este es un link de redirección. Sigue estos pasos:
+                                    </p>
+                                    <ol style="margin: 0 0 15px 0; padding-left: 20px; color: #856404;">
+                                        <li>Haz clic en "Abrir Spotify" abajo</li>
+                                        <li>Spotify se abrirá en una nueva pestaña</li>
+                                        <li>Copia la URL completa de Spotify de la barra de direcciones</li>
+                                        <li>Vuelve aquí y pega esa URL en el campo de arriba</li>
+                                        <li>Presiona "Cargar" nuevamente</li>
+                                    </ol>
+                                    <a href="${link}" target="_blank" style="display: inline-block; padding: 12px 24px; background: #1DB954; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                                        🎵 Abrir Spotify
+                                    </a>
+                                </div>
+                            `;
+                            songPreview.style.display = 'block';
+                            return;
+                        }
                     }
 
                     // Extraer track ID
@@ -2109,23 +2227,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (trackId) {
                         finalLink = `https://open.spotify.com/track/${trackId}`;
 
-                        // Usar oEmbed API
-                        const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(finalLink)}`;
-                        const oembedResponse = await fetch(oembedUrl);
+                        // Usar oEmbed API para obtener datos básicos
+                        try {
+                            const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(finalLink)}`;
+                            const oembedResponse = await fetch(oembedUrl);
 
-                        if (oembedResponse.ok) {
-                            const oembedData = await oembedResponse.json();
-                            const title = oembedData.title || '';
+                            if (oembedResponse.ok) {
+                                const oembedData = await oembedResponse.json();
+                                console.log('📦 Respuesta completa de oEmbed:', oembedData);
 
-                            // Extraer nombre y artista del título
-                            // Formato: "Song Name" o "Song · Artist"
-                            if (title.includes(' · ')) {
-                                const parts = title.split(' · ');
-                                songName = parts[0].trim();
-                                artistName = parts[1].trim();
-                            } else {
-                                songName = title.trim();
+                                const title = oembedData.title || '';
+                                const authorName = oembedData.author_name || oembedData.provider_name || '';
+
+                                // Intentar extraer del título si tiene formato "Song - Artist"
+                                if (title.includes(' - ')) {
+                                    const parts = title.split(' - ');
+                                    songName = parts[0].trim();
+                                    artistName = parts.slice(1).join(' - ').trim();
+                                } else if (title.includes(' · ')) {
+                                    const parts = title.split(' · ');
+                                    songName = parts[0].trim();
+                                    artistName = parts.slice(1).join(' · ').trim();
+                                } else {
+                                    songName = title.trim();
+                                    if (authorName && authorName !== 'Spotify') {
+                                        artistName = authorName.trim();
+                                    }
+                                }
+
+                                console.log('✅ Datos procesados:', { songName, artistName });
                             }
+                        } catch (oembedError) {
+                            console.log('⚠️ Error con oEmbed:', oembedError);
                         }
                     }
 
@@ -2356,8 +2489,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     updatedAt: Date.now()
                 };
 
-                const listsRef = window.firestoreCollection(window.firebaseDb, 'customLists');
-                await window.firestoreAddDoc(listsRef, listData);
+                const { collection, addDoc } = window.firestoreQuery;
+                const listsRef = collection(window.firebaseDb, 'customLists');
+                await addDoc(listsRef, listData);
 
                 alert(`✅ Lista "${currentListName}" guardada exitosamente con ${currentSongs.length} canciones`);
                 createListModal.style.display = 'none';

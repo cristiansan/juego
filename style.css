@@ -1566,6 +1566,37 @@ body.dragging .drop-zone-between {
     color: var(--accent);
 }
 
+.playlist-selector {
+    padding: 8px 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 14px;
+    cursor: pointer;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.playlist-selector:hover {
+    border-color: var(--primary);
+}
+
+.playlist-selector:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(75, 0, 130, 0.1);
+}
+
+.playlist-info {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.playlist-info p {
+    margin: 5px 0;
+}
+
 /* Modal de Contact */
 .contact-modal {
     position: fixed;
